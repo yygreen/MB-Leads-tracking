@@ -1,5 +1,7 @@
 'use client';
 
+import Logo from './Logo';
+
 function formatTimestamp(iso: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -24,11 +26,9 @@ export default function TopBar({
     <header className="topbar">
       <div className="shell topbar-inner">
         <div className="brand">
-          <div className="brand-mark">MB</div>
-          <div>
-            <div className="brand-title">Mastermind Behavior</div>
-            <div className="brand-sub">Marketing Lead Tracking</div>
-          </div>
+          <Logo height={42} />
+          <span className="brand-divider" aria-hidden />
+          <span className="brand-sub">Marketing Lead Tracking</span>
         </div>
         <div className="topbar-meta">
           <div className="last-updated">
