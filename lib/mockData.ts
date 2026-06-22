@@ -153,7 +153,7 @@ function buildGBPLocations(): GBPLocationRow[] {
     {
       name: 'Lakewood, NJ',
       status: 'pending',
-      note: 'Access pending — profile not yet managed (request sent)',
+      note: 'Unclaimed — not yet claimed by your account',
       calls: null,
       directions: null,
       websiteClicks: null,
@@ -162,7 +162,7 @@ function buildGBPLocations(): GBPLocationRow[] {
     {
       name: 'Macon, GA',
       status: 'pending',
-      note: 'Access pending — profile not yet managed',
+      note: 'Unclaimed — not yet claimed by your account',
       calls: null,
       directions: null,
       websiteClicks: null,
