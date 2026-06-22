@@ -130,19 +130,39 @@ function buildForms(formTotal30d: number): FormRow[] {
 }
 
 function buildGBPLocations(): GBPLocationRow[] {
+  // Real Mastermind Behavior Services GBP profiles. Performance-API tracking is
+  // only possible for profiles the team manages; the rest are flagged until
+  // ownership/access is granted. (NC has no GBP listing live yet.)
   return [
     {
-      name: 'Marlton, NJ',
+      name: 'Hackensack, NJ',
       status: 'active',
-      calls: 84,
-      directions: 213,
-      websiteClicks: 167,
-      impressions: 9420,
+      calls: 92,
+      directions: 188,
+      websiteClicks: 154,
+      impressions: 8730,
+    },
+    {
+      name: 'Warner Robins, GA',
+      status: 'active',
+      calls: 17,
+      directions: 41,
+      websiteClicks: 28,
+      impressions: 1320,
     },
     {
       name: 'Lakewood, NJ',
       status: 'pending',
-      note: 'Access pending, request sent',
+      note: 'Access pending — profile not yet managed (request sent)',
+      calls: null,
+      directions: null,
+      websiteClicks: null,
+      impressions: null,
+    },
+    {
+      name: 'Macon, GA',
+      status: 'pending',
+      note: 'Access pending — profile not yet managed',
       calls: null,
       directions: null,
       websiteClicks: null,
@@ -156,7 +176,7 @@ function buildSources(): SourceStatusRow[] {
     { key: 'callrail', label: 'CallRail', status: 'connected', detail: 'API v3' },
     { key: 'forms', label: 'Webflow Forms', status: 'connected', detail: 'Webhook live' },
     { key: 'calendly', label: 'Calendly', status: 'pending', detail: 'Awaiting token' },
-    { key: 'gbp', label: 'Google Business Profile', status: 'partial', detail: '1 of 2 locations' },
+    { key: 'gbp', label: 'Google Business Profile', status: 'partial', detail: '2 of 4 profiles managed' },
     { key: 'ga4', label: 'GA4', status: 'connected', detail: 'Data API' },
     { key: 'leadtrap', label: 'Leadtrap', status: 'pending', detail: 'API shape TBD' },
   ];
