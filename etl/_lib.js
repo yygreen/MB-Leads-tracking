@@ -40,20 +40,26 @@ async function writeLocal(filename, data) {
 
 // --- vercel blob ----------------------------------------------------------
 
+// Vercel Blob stores are private by default, so we write and read with
+// access: 'private' and pull the content back through the authenticated get().
 async function readBlob(filename, fallback) {
-  const { list } = await import('@vercel/blob');
-  const { blobs } = await list({ prefix: filename });
-  const match = blobs.find((b) => b.pathname === filename);
-  if (!match) return fallback;
-  const res = await fetch(match.url, { cache: 'no-store' });
-  if (!res.ok) return fallback;
-  return res.json();
+  const { get } = await import('@vercel/blob');
+  let result;
+  try {
+    result = await get(filename, { access: 'private' });
+  } catch (err) {
+    // BlobNotFoundError → no data yet; anything else we also fall back safely.
+    return fallback;
+  }
+  if (!result || !result.stream) return fallback;
+  const text = await new Response(result.stream).text();
+  return JSON.parse(text);
 }
 
 async function writeBlob(filename, data) {
   const { put } = await import('@vercel/blob');
   await put(filename, JSON.stringify(data, null, 2), {
-    access: 'public',
+    access: 'private',
     contentType: 'application/json',
     addRandomSuffix: false,
     allowOverwrite: true,

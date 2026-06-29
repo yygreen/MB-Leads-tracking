@@ -22,7 +22,7 @@
     "recharts": "^2.12.7"
   },
   "optionalDependencies": {
-    "@vercel/blob": "^0.23.4",
+    "@vercel/blob": "^2.5.0",
     "googleapis": "^140.0.1"
   },
   "devDependencies": {
