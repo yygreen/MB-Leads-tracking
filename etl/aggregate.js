@@ -3,7 +3,7 @@
 // ETL crons are pulling live data. When no real data exists yet, /api/data
 // transparently falls back to mock so previews still look complete.
 // Standalone: `node etl/aggregate.js`
-import { readJSON, writeJSON } from './_lib.js';
+import { readJSON, writeJSON, readCollection } from './_lib.js';
 import { isMain } from './_run.js';
 
 const DAYS = 180;
@@ -41,7 +41,8 @@ export async function aggregate() {
     readJSON('forms.json', []),
     readJSON('gbp.json', []),
     readJSON('ga4.json', []),
-    readJSON('leadtrap.json', []),
+    // Leadtrap is webhook-fed, stored one immutable blob per lead.
+    readCollection('leadtrap'),
   ]);
 
   const timeline = emptyTimeline();

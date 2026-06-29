@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readJSON, writeJSON } from '@/etl/_lib.js';
+import { appendRecord } from '@/etl/_lib.js';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -84,11 +84,9 @@ export async function POST(req: Request) {
   };
 
   try {
-    const existing = (await readJSON('leadtrap.json', [])) as any[];
-    if (!existing.some((r) => r.id === record.id)) {
-      existing.push(record);
-      await writeJSON('leadtrap.json', existing);
-    }
+    // One immutable blob per lead, keyed by id — idempotent on resend and free
+    // of the read-modify-write race that an array file would have.
+    await appendRecord('leadtrap', record.id, record);
   } catch (err) {
     console.error('[api/leadtrap-webhook] write failed:', err);
     return NextResponse.json({ ok: false, error: 'storage error' }, { status: 500 });

@@ -1,44 +1,37 @@
 import { NextResponse } from 'next/server';
-import { runCron, authorizeCron } from '@/lib/cron';
-import { guardedWrite } from '@/etl/guard.js';
-import { writeJSON, readJSON } from '@/etl/_lib.js';
-import { pull } from '@/etl/leadtrap.js';
+import { authorizeCron } from '@/lib/cron';
+import { readCollection, clearCollection } from '@/etl/_lib.js';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Leadtrap has no REST API — data arrives via /api/leadtrap-webhook. This
-// handler is a placeholder; guardedWrite ensures an empty pull never wipes the
-// webhook-collected leadtrap.json.
+// Leadtrap has no REST API — leads arrive via /api/leadtrap-webhook and are
+// stored one immutable blob per lead under the `leadtrap/` prefix. There is
+// nothing to pull on a schedule, so the default GET just reports the current
+// count.
 //
-// ?reset=1 — one-time purge of leadtrap.json (used to drop a legacy raw record
-// that included PHI before the sanitizing receiver shipped).
+//   ?reset=1 — purge every stored lead (one-time cleanup).
+//   ?dump=1  — inspect the stored leads (ids / dates / utm).
 export async function GET(req: Request) {
   if (!authorizeCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
   const params = new URL(req.url).searchParams;
   if (params.get('reset') === '1') {
-    await writeJSON('leadtrap.json', []);
-    return NextResponse.json({ ok: true, reset: true });
+    const removed = await clearCollection('leadtrap');
+    return NextResponse.json({ ok: true, reset: true, removed });
   }
   if (params.get('dump') === '1') {
-    const rows = (await readJSON('leadtrap.json', [])) as any[];
-    let meta: any = null;
-    try {
-      const { head } = await import('@vercel/blob');
-      const h = await head('leadtrap.json');
-      meta = { size: h.size, uploadedAt: h.uploadedAt, url: h.url };
-    } catch (err: any) {
-      meta = { headError: String(err?.message || err) };
-    }
+    const rows = (await readCollection('leadtrap')) as any[];
     return NextResponse.json({
       ok: true,
-      readCount: rows.length,
+      count: rows.length,
       ids: rows.map((r) => r.id),
-      blobMeta: meta,
+      dates: rows.map((r) => r.timestamp),
+      utm: rows.map((r) => `${r.utm_source}/${r.utm_medium}`),
     });
   }
-  return runCron(req, { source: 'leadtrap', file: 'leadtrap.json', pull, write: guardedWrite });
+  const rows = (await readCollection('leadtrap')) as any[];
+  return NextResponse.json({ ok: true, source: 'leadtrap', count: rows.length });
 }

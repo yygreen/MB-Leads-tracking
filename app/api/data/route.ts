@@ -11,13 +11,12 @@ export const runtime = 'nodejs';
 // claims to be live until it really is. As env vars get added in Vercel, the
 // matching pill turns green on the next request. (Webflow Forms has no API key;
 // its webhook endpoint is deployed and live regardless.)
-function liveSourceStatuses(): SourceStatusRow[] {
+function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
   const has = (...keys: string[]) => keys.every((k) => Boolean(process.env[k]));
 
   const callrail = has('CALLRAIL_API_KEY', 'CALLRAIL_ACCOUNT_ID');
   const gbp = has('GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN', 'GBP_LOCATION_IDS');
   const ga4 = has('GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_JSON');
-  const leadtrap = has('LEADTRAP_API_KEY');
 
   return [
     {
@@ -47,8 +46,8 @@ function liveSourceStatuses(): SourceStatusRow[] {
     {
       key: 'leadtrap',
       label: 'Leadtrap',
-      status: 'pending',
-      detail: leadtrap ? 'Key set · API shape TBD' : 'API shape TBD',
+      status: leadtrapLeads > 0 ? 'connected' : 'pending',
+      detail: leadtrapLeads > 0 ? 'Webhook live' : 'Webhook live · awaiting leads',
     },
   ];
 }
@@ -75,7 +74,11 @@ export async function GET() {
 
   // Always reflect the real credential state in the status row, regardless of
   // whether the rest of the payload is live or sample data.
-  data.sources = liveSourceStatuses();
+  const leadtrapLeads = (data.timeline || []).reduce(
+    (a, p) => a + ((p as any).leadtrap || 0),
+    0
+  );
+  data.sources = liveSourceStatuses(leadtrapLeads);
 
   return NextResponse.json(data, {
     headers: {
