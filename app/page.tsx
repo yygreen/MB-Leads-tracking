@@ -89,24 +89,8 @@ export default function Page() {
         <ChannelTimeline timeline={data.timeline} />
       </Section>
 
-      <Section
-        title="Website Traffic"
-        desc="GA4 website sessions — overall traffic context, separate from the lead channels above."
-      >
-        <div style={{ maxWidth: 420 }}>
-          <SessionsSparkline timeline={data.timeline} />
-        </div>
-      </Section>
-
       <Section title="Channel Mix" desc="Where leads came from over the last 30 days, by volume.">
         <ChannelMixTable rows={data.channelMix} />
-      </Section>
-
-      <Section
-        title="UTM Source Breakdown"
-        desc="Attribution from the live UTM tracking installed on mastermindbehavior.com."
-      >
-        <UTMBreakdown rows={data.utmSources} />
       </Section>
 
       <Section
@@ -117,8 +101,24 @@ export default function Page() {
       </Section>
 
       <Section
+        title="UTM Source Breakdown"
+        desc="Attribution from the live UTM tracking installed on mastermindbehavior.com."
+      >
+        <UTMBreakdown rows={data.utmSources} />
+      </Section>
+
+      <Section
+        title="Website Traffic"
+        desc="GA4 website sessions — overall traffic context, separate from the lead channels above."
+      >
+        <div style={{ maxWidth: 420 }}>
+          <SessionsSparkline timeline={data.timeline} />
+        </div>
+      </Section>
+
+      <Section
         title="GBP Per-Location"
-        desc="Google Business Profile performance by location. Locations awaiting access are flagged."
+        desc="🚧 Under construction — awaiting Google Business Profile API access. Showing placeholder locations until OAuth is approved; live performance data will backfill once connected."
       >
         <GBPLocations rows={data.gbpLocations} />
       </Section>
