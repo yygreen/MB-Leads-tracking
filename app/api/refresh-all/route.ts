@@ -6,6 +6,8 @@ import { pull as pullCalendly } from '@/etl/calendly.js';
 import { pull as pullGbp } from '@/etl/gbp.js';
 import { pull as pullGa4 } from '@/etl/ga4.js';
 import { pull as pullLeadtrap } from '@/etl/leadtrap.js';
+import { pull as pullWebflow } from '@/etl/webflow.js';
+import { guardedWrite } from '@/etl/guard.js';
 import { aggregate } from '@/etl/aggregate.js';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +40,20 @@ export async function POST(req: Request) {
       console.error(`[refresh-all:${name}]`, err);
       results[name] = { ok: false, error: String(err?.message || err) };
     }
+  }
+
+  // Webflow forms — authoritative forms.json (guarded so an empty pull never
+  // wipes webhook-collected data).
+  try {
+    const records = await pullWebflow();
+    const written = await guardedWrite('forms.json', records);
+    results.webflow = {
+      ok: true,
+      count: Array.isArray(written) ? written.length : records.length,
+    };
+  } catch (err: any) {
+    console.error('[refresh-all:webflow]', err);
+    results.webflow = { ok: false, error: String(err?.message || err) };
   }
 
   let totalLeads30d = 0;

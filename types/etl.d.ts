@@ -23,6 +23,16 @@ declare module '@/etl/ga4.js' {
 declare module '@/etl/leadtrap.js' {
   export function pull(): Promise<any[]>;
 }
+declare module '@/etl/webflow.js' {
+  export function pull(): Promise<any[]>;
+}
+declare module '@/etl/guard.js' {
+  export function guardedWrite<T = unknown>(
+    file: string,
+    incoming: T,
+    opts?: { allowEmpty?: boolean }
+  ): Promise<T>;
+}
 declare module '@/etl/aggregate.js' {
   export function aggregate(): Promise<DashboardData>;
 }
