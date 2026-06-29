@@ -89,8 +89,8 @@ export default function Page() {
         <ChannelTimeline timeline={data.timeline} />
       </Section>
 
-      <Section title="Channel Mix" desc="Where leads came from over the last 30 days, by volume.">
-        <ChannelMixTable rows={data.channelMix} />
+      <Section title="Channel Mix" desc="Where leads came from, by volume. Toggle 30 / 90 / 180 days.">
+        <ChannelMixTable timeline={data.timeline} />
       </Section>
 
       <Section
@@ -102,9 +102,9 @@ export default function Page() {
 
       <Section
         title="UTM Source Breakdown"
-        desc="Attribution from the live UTM tracking installed on mastermindbehavior.com."
+        desc="Attribution from the live UTM tracking on mastermindbehavior.com. Toggle 30 / 90 / 180 days."
       >
-        <UTMBreakdown rows={data.utmSources} />
+        <UTMBreakdown windows={data.utmSourcesByWindow} />
       </Section>
 
       <Section

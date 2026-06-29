@@ -76,24 +76,34 @@ export async function aggregate() {
     .map((c) => ({ ...c, pct: Math.round((c.count / mixTotal) * 1000) / 10 }))
     .sort((a, b) => b.count - a.count);
 
-  // --- UTM breakdown (from callrail + forms that carry utm fields) ---
-  const utmMap = new Map();
+  // --- UTM breakdown by window (from callrail + forms + leadtrap) ---
   const recent = (ts) =>
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
-  [...callrail, ...forms, ...leadtrap].forEach((r) => {
-    const ts = r.timestamp || r.submittedAt;
-    if (ts && !recent(ts)) return;
-    const source = r.utm_source || '(direct)';
-    const medium = r.utm_medium || '(none)';
-    const key = `${source}|${medium}`;
-    utmMap.set(key, (utmMap.get(key) || 0) + 1);
-  });
-  const utmSources = [...utmMap.entries()]
-    .map(([k, count]) => {
-      const [source, medium] = k.split('|');
-      return { source, medium, count };
-    })
-    .sort((a, b) => b.count - a.count);
+  const utmRecords = [...callrail, ...forms, ...leadtrap];
+  const utmBreakdown = (days) => {
+    const cutoff = Date.now() - days * 86400000;
+    const m = new Map();
+    utmRecords.forEach((r) => {
+      const ts = r.timestamp || r.submittedAt;
+      if (!ts || new Date(ts).getTime() < cutoff) return;
+      const source = r.utm_source || '(direct)';
+      const medium = r.utm_medium || '(none)';
+      const key = `${source}|${medium}`;
+      m.set(key, (m.get(key) || 0) + 1);
+    });
+    return [...m.entries()]
+      .map(([k, count]) => {
+        const [source, medium] = k.split('|');
+        return { source, medium, count };
+      })
+      .sort((a, b) => b.count - a.count);
+  };
+  const utmSourcesByWindow = {
+    '30': utmBreakdown(30),
+    '90': utmBreakdown(90),
+    '180': utmBreakdown(180),
+  };
+  const utmSources = utmSourcesByWindow['30'];
 
   // --- source/medium timeline (daily counts per combo, top combos + Other) ---
   const comboLabel = (r) =>
@@ -188,6 +198,7 @@ export async function aggregate() {
     timeline,
     channelMix,
     utmSources,
+    utmSourcesByWindow,
     utmTimeline,
     utmSeries,
     forms: formRows,

@@ -1,9 +1,29 @@
-import type { UTMRow } from '@/lib/types';
+'use client';
 
-export default function UTMBreakdown({ rows }: { rows: UTMRow[] }) {
+import { useState } from 'react';
+import type { UTMWindows } from '@/lib/types';
+
+type Range = '30' | '90' | '180';
+
+export default function UTMBreakdown({ windows }: { windows: UTMWindows }) {
+  const [range, setRange] = useState<Range>('30');
+  const rows = windows[range] || [];
   const total = rows.reduce((a, r) => a + r.count, 0) || 1;
+
   return (
     <div className="card card-pad">
+      <div className="row-flex" style={{ marginBottom: 16 }}>
+        <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
+          Attribution by source / medium
+        </div>
+        <div className="toggle">
+          {(['30', '90', '180'] as Range[]).map((r) => (
+            <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>
+              {r}d
+            </button>
+          ))}
+        </div>
+      </div>
       <table className="table">
         <thead>
           <tr>

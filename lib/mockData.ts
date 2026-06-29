@@ -115,6 +115,17 @@ function buildUTM(totalLeads30d: number): UTMRow[] {
     .sort((a, b) => b.count - a.count);
 }
 
+function buildUTMWindows(timeline: TimelinePoint[]) {
+  const leadKeys: Array<keyof TimelinePoint> = ['callrail', 'forms', 'leadtrap', 'gbpCalls'];
+  const leadsIn = (days: number) =>
+    leadKeys.reduce((a, k) => a + sumLast(timeline, k, days), 0);
+  return {
+    '30': buildUTM(leadsIn(30)),
+    '90': buildUTM(leadsIn(90)),
+    '180': buildUTM(leadsIn(180)),
+  };
+}
+
 // Distribute each day's lead volume across source/medium combos so the mock
 // source timeline mirrors the channel one.
 const UTM_DIST: Array<{ combo: string; weight: number }> = [
@@ -232,6 +243,7 @@ export function getMockDashboard(): DashboardData {
     timeline,
     channelMix: buildChannelMix(timeline),
     utmSources: buildUTM(totalLeads30d),
+    utmSourcesByWindow: buildUTMWindows(timeline),
     utmTimeline,
     utmSeries,
     forms: buildForms(forms30),

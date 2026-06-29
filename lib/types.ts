@@ -40,6 +40,13 @@ export interface UTMRow {
   count: number;
 }
 
+/** UTM breakdowns precomputed for each lookback window. */
+export interface UTMWindows {
+  '30': UTMRow[];
+  '90': UTMRow[];
+  '180': UTMRow[];
+}
+
 export interface FormRow {
   name: string;
   count: number;
@@ -80,6 +87,8 @@ export interface DashboardData {
   timeline: TimelinePoint[];
   channelMix: ChannelMixRow[];
   utmSources: UTMRow[];
+  /** UTM breakdown for 30 / 90 / 180-day windows (full source/medium list) */
+  utmSourcesByWindow: UTMWindows;
   /** daily lead counts per source/medium, for the source timeline chart */
   utmTimeline: UTMTimelinePoint[];
   /** the source/medium combos rendered as series (top combos + "Other") */
