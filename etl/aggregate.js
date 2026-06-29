@@ -104,7 +104,9 @@ export async function aggregate() {
   forms.forEach((f) => {
     const ts = f.timestamp || f.submittedAt;
     if (ts && !recent(ts)) return;
-    const name = f.formName || f.form || 'Unknown Form';
+    let name = f.formName || f.form || 'Unknown Form';
+    // Legacy fix: early webhook records stored the submitter's name in formName.
+    if (name === f.name) name = 'Contact Us';
     formMap.set(name, (formMap.get(name) || 0) + 1);
   });
   const formRows = [...formMap.entries()]
