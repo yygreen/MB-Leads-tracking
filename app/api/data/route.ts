@@ -15,7 +15,6 @@ function liveSourceStatuses(): SourceStatusRow[] {
   const has = (...keys: string[]) => keys.every((k) => Boolean(process.env[k]));
 
   const callrail = has('CALLRAIL_API_KEY', 'CALLRAIL_ACCOUNT_ID');
-  const calendly = has('CALENDLY_API_KEY');
   const gbp = has('GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN', 'GBP_LOCATION_IDS');
   const ga4 = has('GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_JSON');
   const leadtrap = has('LEADTRAP_API_KEY');
@@ -36,8 +35,10 @@ function liveSourceStatuses(): SourceStatusRow[] {
     {
       key: 'calendly',
       label: 'Calendly',
-      status: calendly ? 'connected' : 'pending',
-      detail: calendly ? 'API v2' : 'Awaiting token',
+      // Client confirmed no leads come directly through Calendly (secondary
+      // channel after a form), so it's intentionally not tracked.
+      status: 'na',
+      detail: 'No direct leads',
     },
     {
       key: 'gbp',

@@ -5,6 +5,7 @@ const LABELS: Record<SourceStatus, string> = {
   partial: 'Partial',
   pending: 'Pending access',
   no_data: 'No data',
+  na: 'Not tracked',
 };
 
 export default function SourcesStatus({ sources }: { sources: SourceStatusRow[] }) {

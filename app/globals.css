@@ -317,6 +317,10 @@ section.block:last-child {
   background: #c0392b;
   box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.14);
 }
+.dot.na {
+  background: #b8b2a6;
+  box-shadow: 0 0 0 3px rgba(184, 178, 166, 0.18);
+}
 .pill-label {
   font-weight: 600;
   font-size: 13.5px;
@@ -344,6 +348,9 @@ section.block:last-child {
 }
 .status-text.no_data {
   color: #c0392b;
+}
+.status-text.na {
+  color: #8a8378;
 }
 
 .row-flex {

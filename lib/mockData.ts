@@ -175,7 +175,7 @@ function buildSources(): SourceStatusRow[] {
   return [
     { key: 'callrail', label: 'CallRail', status: 'connected', detail: 'API v3' },
     { key: 'forms', label: 'Webflow Forms', status: 'connected', detail: 'Webhook live' },
-    { key: 'calendly', label: 'Calendly', status: 'pending', detail: 'Awaiting token' },
+    { key: 'calendly', label: 'Calendly', status: 'na', detail: 'No direct leads' },
     { key: 'gbp', label: 'Google Business Profile', status: 'partial', detail: '2 of 4 profiles managed' },
     { key: 'ga4', label: 'GA4', status: 'connected', detail: 'Data API' },
     { key: 'leadtrap', label: 'Leadtrap', status: 'pending', detail: 'API shape TBD' },

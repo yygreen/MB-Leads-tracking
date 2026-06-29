@@ -10,7 +10,7 @@ export type SourceKey =
   | 'ga4'
   | 'leadtrap';
 
-export type SourceStatus = 'connected' | 'no_data' | 'pending' | 'partial';
+export type SourceStatus = 'connected' | 'no_data' | 'pending' | 'partial' | 'na';
 
 export interface TimelinePoint {
   /** ISO date, YYYY-MM-DD */
