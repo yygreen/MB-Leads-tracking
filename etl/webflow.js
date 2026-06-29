@@ -89,6 +89,17 @@ export async function pull() {
   const cutoff = Date.now() - DAYS * 86400000;
   const out = [];
 
+  // Only specific lead forms count (Contact Us). Other site forms (Careers,
+  // newsletter "Email Form", "Form") are not marketing leads. Override via
+  // WEBFLOW_LEAD_FORMS (comma-separated form names) if the set changes.
+  const leadForms = (process.env.WEBFLOW_LEAD_FORMS || 'Contact Us')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  const isTest = (name, utmSource) =>
+    ['zaptest', 'test'].includes(String(utmSource || '').toLowerCase()) ||
+    /zap ?test/i.test(String(name || ''));
+
   // Site-wide submissions endpoint: one paginated list, each submission carries
   // its own form name (displayName) and date — simpler and correct (per-form
   // queries miss submissions tied to other form element IDs).
@@ -102,15 +113,19 @@ export async function pull() {
       );
       const subs = data.formSubmissions || data.submissions || [];
       for (const s of subs) {
+        const formName = s.displayName || s.formName || 'Webflow Form';
+        if (!leadForms.includes(formName.toLowerCase())) continue; // lead forms only
         const ts = submittedAt(s);
         if (ts && new Date(ts).getTime() < cutoff) continue;
         const r = s.formResponse || s.data || s.payload || {};
+        const name = fuzzy(r, [/full ?name/i, /^name$/i]);
+        if (isTest(name, exact(r, 'utm_source'))) continue; // drop test submissions
         out.push({
           source: 'forms',
           id: s.id,
-          formName: s.displayName || s.formName || 'Webflow Form',
+          formName,
           timestamp: ts,
-          name: fuzzy(r, [/full ?name/i, /^name$/i]),
+          name,
           email: fuzzy(r, [/e-?mail/i]),
           phone: fuzzy(r, [/phone/i]),
           insurance: fuzzy(r, [/insurance/i]),
