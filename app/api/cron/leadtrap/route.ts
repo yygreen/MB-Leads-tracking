@@ -25,12 +25,19 @@ export async function GET(req: Request) {
   }
   if (params.get('dump') === '1') {
     const rows = (await readJSON('leadtrap.json', [])) as any[];
+    let meta: any = null;
+    try {
+      const { head } = await import('@vercel/blob');
+      const h = await head('leadtrap.json');
+      meta = { size: h.size, uploadedAt: h.uploadedAt, url: h.url };
+    } catch (err: any) {
+      meta = { headError: String(err?.message || err) };
+    }
     return NextResponse.json({
       ok: true,
-      count: rows.length,
+      readCount: rows.length,
       ids: rows.map((r) => r.id),
-      dates: rows.map((r) => r.timestamp),
-      utm: rows.map((r) => `${r.utm_source}/${r.utm_medium}`),
+      blobMeta: meta,
     });
   }
   return runCron(req, { source: 'leadtrap', file: 'leadtrap.json', pull, write: guardedWrite });
