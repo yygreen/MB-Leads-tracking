@@ -28,6 +28,8 @@ export async function POST(req: Request) {
     name: fields.name || fields.fullName || null,
     email: fields.email || null,
     phone: fields.phone || null,
+    insurance: fields.insurance || null,
+    zip: fields.zip || fields.zip_code || fields.zipCode || null,
     utm_source: fields.utm_source || null,
     utm_medium: fields.utm_medium || null,
     utm_campaign: fields.utm_campaign || null,
