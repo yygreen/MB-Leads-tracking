@@ -95,14 +95,14 @@ export default function Page() {
 
       <Section
         title="Source / Medium Timeline"
-        desc="Daily lead volume by UTM source & medium — where leads come from, over time."
+        desc="Daily lead volume by UTM source & medium. ⚠️ UTM tracking went live the week of June 15, 2026 — dates before then predate tagging, so earlier leads aren't attributed here."
       >
         <SourceTimeline utmTimeline={data.utmTimeline} utmSeries={data.utmSeries} />
       </Section>
 
       <Section
         title="UTM Source Breakdown"
-        desc="Attribution from the live UTM tracking on mastermindbehavior.com. Toggle 30 / 90 / 180 days."
+        desc="Attribution from UTM tracking on mastermindbehavior.com. ⚠️ Tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so the 90- and 180-day windows mostly predate tracking and understate real attribution. The 30-day view is the most representative."
       >
         <UTMBreakdown windows={data.utmSourcesByWindow} />
       </Section>
