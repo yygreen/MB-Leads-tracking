@@ -5,6 +5,7 @@ import type { DashboardData } from '@/lib/types';
 import TopBar from '@/components/TopBar';
 import SummaryCards from '@/components/SummaryCards';
 import ChannelTimeline from '@/components/ChannelTimeline';
+import SessionsSparkline from '@/components/SessionsSparkline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
 import FormBreakdown from '@/components/FormBreakdown';
@@ -86,6 +87,15 @@ export default function Page() {
         desc="Daily lead activity by source. Toggle the range to see 30, 90, or 180 days."
       >
         <ChannelTimeline timeline={data.timeline} />
+      </Section>
+
+      <Section
+        title="Website Traffic"
+        desc="GA4 website sessions — overall traffic context, separate from the lead channels above."
+      >
+        <div style={{ maxWidth: 420 }}>
+          <SessionsSparkline timeline={data.timeline} />
+        </div>
       </Section>
 
       <Section title="Channel Mix" desc="Where leads came from over the last 30 days, by volume.">
