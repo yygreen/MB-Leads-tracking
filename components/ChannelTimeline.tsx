@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from 'react';
 import {
-  AreaChart,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,6 +12,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+
+// Neutral colour for the cumulative Total line — deliberately not one of the
+// per-source colours so it reads as the envelope, not a channel.
+const TOTAL_COLOR = '#475569';
 import type { TimelinePoint } from '@/lib/types';
 
 type Range = 30 | 90 | 180;
@@ -32,7 +37,14 @@ function shortDate(iso: string): string {
 export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[] }) {
   const [range, setRange] = useState<Range>(90);
 
-  const data = useMemo(() => timeline.slice(-range), [timeline, range]);
+  const data = useMemo(
+    () =>
+      timeline.slice(-range).map((p) => ({
+        ...p,
+        total: SERIES.reduce((sum, s) => sum + ((p[s.key] as number) || 0), 0),
+      })),
+    [timeline, range]
+  );
   const tickGap = range === 30 ? 4 : range === 90 ? 12 : 24;
 
   return (
@@ -55,7 +67,7 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
       </div>
       <div style={{ width: '100%', height: 340 }}>
         <ResponsiveContainer>
-          <AreaChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+          <ComposedChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <defs>
               {SERIES.map((s) => (
                 <linearGradient key={s.key} id={`g-${s.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -103,7 +115,16 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
                 fill={`url(#g-${s.key})`}
               />
             ))}
-          </AreaChart>
+            <Line
+              type="linear"
+              dataKey="total"
+              name="Total"
+              stroke={TOTAL_COLOR}
+              strokeWidth={2.5}
+              dot={false}
+              activeDot={{ r: 3 }}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
