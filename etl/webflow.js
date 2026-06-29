@@ -86,16 +86,18 @@ export async function pull() {
     return [];
   }
 
-  const { forms } = await wf(`/sites/${siteId}/forms`, token);
   const cutoff = Date.now() - DAYS * 86400000;
   const out = [];
 
-  for (const form of forms || []) {
+  // Site-wide submissions endpoint: one paginated list, each submission carries
+  // its own form name (displayName) and date — simpler and correct (per-form
+  // queries miss submissions tied to other form element IDs).
+  {
     let offset = 0;
     const limit = 100;
-    for (let page = 0; page < 50; page++) {
+    for (let page = 0; page < 200; page++) {
       const data = await wf(
-        `/forms/${form.id}/submissions?limit=${limit}&offset=${offset}`,
+        `/sites/${siteId}/form_submissions?limit=${limit}&offset=${offset}`,
         token
       );
       const subs = data.formSubmissions || data.submissions || [];
@@ -106,7 +108,7 @@ export async function pull() {
         out.push({
           source: 'forms',
           id: s.id,
-          formName: form.displayName || s.displayName || 'Webflow Form',
+          formName: s.displayName || s.formName || 'Webflow Form',
           timestamp: ts,
           name: fuzzy(r, [/full ?name/i, /^name$/i]),
           email: fuzzy(r, [/e-?mail/i]),
@@ -146,10 +148,7 @@ export async function sampleRaw() {
   if (!token) return { error: 'WEBFLOW_API_TOKEN missing' };
   const siteId = await resolveSiteId(token);
   if (!siteId) return { error: 'no site' };
-  const { forms } = await wf(`/sites/${siteId}/forms`, token);
-  const form = (forms || [])[0];
-  if (!form) return { siteId, forms: 0 };
-  const data = await wf(`/forms/${form.id}/submissions?limit=1&offset=0`, token);
+  const data = await wf(`/sites/${siteId}/form_submissions?limit=1&offset=0`, token);
   const first = (data.formSubmissions || data.submissions || [])[0] || null;
   const meta = {};
   if (first) {
@@ -160,8 +159,6 @@ export async function sampleRaw() {
   const r = first && (first.formResponse || first.data || first.payload);
   return {
     siteId,
-    formCount: forms.length,
-    firstFormName: form.displayName,
     responseWrapperKey: first
       ? first.formResponse
         ? 'formResponse'
