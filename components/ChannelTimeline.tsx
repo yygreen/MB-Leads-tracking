@@ -20,7 +20,8 @@ const SERIES: Array<{ key: keyof TimelinePoint; name: string; color: string }> =
   { key: 'forms', name: 'Forms', color: '#1a2744' },
   { key: 'gbpCalls', name: 'GBP Calls', color: '#e8734a' },
   { key: 'leadtrap', name: 'Leadtrap', color: '#c8b893' },
-  { key: 'ga4Sessions', name: 'GA4 Sessions', color: '#db5b4f' },
+  // GA4 sessions are website traffic (30–150/day), not leads — including them
+  // here would dwarf the lead channels. They live in their own context instead.
 ];
 
 function shortDate(iso: string): string {
