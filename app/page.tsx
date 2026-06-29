@@ -9,7 +9,6 @@ import SessionsSparkline from '@/components/SessionsSparkline';
 import SourceTimeline from '@/components/SourceTimeline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
-import FormBreakdown from '@/components/FormBreakdown';
 import GBPLocations from '@/components/GBPLocations';
 import SourcesStatus from '@/components/SourcesStatus';
 
@@ -117,10 +116,6 @@ export default function Page() {
         <SourceTimeline utmTimeline={data.utmTimeline} utmSeries={data.utmSeries} />
       </Section>
 
-      <Section title="Form-Level Detail" desc="Submission counts per Webflow form, last 30 days.">
-        <FormBreakdown rows={data.forms} />
-      </Section>
-
       <Section
         title="GBP Per-Location"
         desc="Google Business Profile performance by location. Locations awaiting access are flagged."
@@ -128,7 +123,10 @@ export default function Page() {
         <GBPLocations rows={data.gbpLocations} />
       </Section>
 
-      <Section title="Data Sources Status" desc="Connection state for each of the six lead sources.">
+      <Section
+        title="Data Sources Status"
+        desc="Connection state per source. Today, leads come from CallRail + Webflow Forms; GBP and Leadtrap join the lead totals as they come online. GA4 is website traffic, not leads."
+      >
         <SourcesStatus sources={data.sources} />
       </Section>
     </>

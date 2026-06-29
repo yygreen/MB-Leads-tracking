@@ -35,19 +35,25 @@ function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
       key: 'gbp',
       label: 'Google Business Profile',
       status: gbp ? 'connected' : 'pending',
-      detail: gbp ? 'Performance API' : '2 of 4 profiles managed · awaiting OAuth',
+      detail: gbp
+        ? 'Performance API · backfills ~6mo history'
+        : '2 of 4 profiles managed · awaiting OAuth (backfills history)',
     },
     {
       key: 'ga4',
       label: 'GA4',
       status: ga4 ? 'connected' : 'pending',
-      detail: ga4 ? 'Data API' : 'Awaiting service account',
+      detail: ga4
+        ? 'Data API · website traffic, not leads'
+        : 'Awaiting service account · traffic stats only (not leads)',
     },
     {
       key: 'leadtrap',
       label: 'Leadtrap',
       status: leadtrapLeads > 0 ? 'connected' : 'pending',
-      detail: leadtrapLeads > 0 ? 'Webhook live' : 'Webhook live · awaiting leads',
+      detail: leadtrapLeads > 0
+        ? 'Webhook live · forward-only'
+        : 'Webhook live · forward-only, awaiting leads',
     },
   ];
 }
