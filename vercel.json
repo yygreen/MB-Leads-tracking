@@ -3,7 +3,6 @@
   "crons": [
     { "path": "/api/cron/callrail", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/webflow", "schedule": "*/15 * * * *" },
-    { "path": "/api/cron/leadtrap", "schedule": "*/15 * * * *" },
     { "path": "/api/cron/calendly", "schedule": "0 * * * *" },
     { "path": "/api/cron/gbp", "schedule": "0 6 * * *" },
     { "path": "/api/cron/ga4", "schedule": "0 6 * * *" },

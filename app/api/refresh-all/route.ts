@@ -5,7 +5,6 @@ import { pull as pullCallrail } from '@/etl/callrail.js';
 import { pull as pullCalendly } from '@/etl/calendly.js';
 import { pull as pullGbp } from '@/etl/gbp.js';
 import { pull as pullGa4 } from '@/etl/ga4.js';
-import { pull as pullLeadtrap } from '@/etl/leadtrap.js';
 import { pull as pullWebflow } from '@/etl/webflow.js';
 import { guardedWrite } from '@/etl/guard.js';
 import { aggregate } from '@/etl/aggregate.js';
@@ -22,20 +21,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
+  // Note: leadtrap is webhook-only (no API), so it's not pulled here — its
+  // leadtrap.json is populated by /api/leadtrap-webhook and must not be wiped.
   const jobs: Array<[string, string, () => Promise<unknown[]>]> = [
     ['callrail', 'callrail.json', pullCallrail],
     ['calendly', 'calendly.json', pullCalendly],
     ['gbp', 'gbp.json', pullGbp],
     ['ga4', 'ga4.json', pullGa4],
-    ['leadtrap', 'leadtrap.json', pullLeadtrap],
   ];
 
   const results: Record<string, { ok: boolean; count?: number; error?: string }> = {};
   for (const [name, file, pull] of jobs) {
     try {
       const records = await pull();
-      await writeJSON(file, records);
-      results[name] = { ok: true, count: records.length };
+      // guardedWrite: a transient empty pull never clobbers existing data.
+      const written = await guardedWrite(file, records);
+      results[name] = { ok: true, count: Array.isArray(written) ? written.length : records.length };
     } catch (err: any) {
       console.error(`[refresh-all:${name}]`, err);
       results[name] = { ok: false, error: String(err?.message || err) };
