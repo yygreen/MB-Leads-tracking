@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   const record = {
     source: 'forms',
     id: payload.id || payload._id || `form_${Date.now()}`,
-    formName: payload.name || fields.formName || fields.form || 'Contact Form',
+    formName: fields.formName || payload.formName || fields.form || payload.name || 'Contact Form',
     timestamp: payload.submittedAt || payload.createdOn || new Date().toISOString(),
     name: fields.name || fields.fullName || null,
     email: fields.email || null,
