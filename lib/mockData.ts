@@ -60,7 +60,6 @@ function buildTimeline(): TimelinePoint[] {
       date: isoDate(d),
       callrail: randIn(rng, 2, 8, s),
       forms: randIn(rng, 1, 4, s),
-      calendly: randIn(rng, 0, 2, s),
       leadtrap: rng() < 0.35 * s ? 1 : 0,
       gbpCalls: randIn(rng, 1, 5, s),
       ga4Sessions: randIn(rng, 30, 150, s),
@@ -84,7 +83,6 @@ function buildChannelMix(timeline: TimelinePoint[]): ChannelMixRow[] {
     { channel: 'CallRail', key: 'callrail' },
     { channel: 'Forms', key: 'forms' },
     { channel: 'GBP Calls', key: 'gbpCalls' },
-    { channel: 'Calendly', key: 'calendly' },
     { channel: 'Leadtrap', key: 'leadtrap' },
   ];
   const counts = channels.map((c) => ({
@@ -175,7 +173,6 @@ function buildSources(): SourceStatusRow[] {
   return [
     { key: 'callrail', label: 'CallRail', status: 'connected', detail: 'API v3' },
     { key: 'forms', label: 'Webflow Forms', status: 'connected', detail: 'Webhook live' },
-    { key: 'calendly', label: 'Calendly', status: 'na', detail: 'No direct leads' },
     { key: 'gbp', label: 'Google Business Profile', status: 'partial', detail: '2 of 4 profiles managed' },
     { key: 'ga4', label: 'GA4', status: 'connected', detail: 'Data API' },
     { key: 'leadtrap', label: 'Leadtrap', status: 'pending', detail: 'API shape TBD' },
@@ -187,10 +184,9 @@ export function getMockDashboard(): DashboardData {
 
   const callrail30 = sumLast(timeline, 'callrail', 30);
   const forms30 = sumLast(timeline, 'forms', 30);
-  const calendly30 = sumLast(timeline, 'calendly', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + calendly30 + leadtrap30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + gbpCalls30;
 
   return {
     lastUpdated: new Date().toISOString(),

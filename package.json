@@ -9,7 +9,6 @@
     "start": "next start",
     "lint": "next lint",
     "etl:callrail": "node etl/callrail.js",
-    "etl:calendly": "node etl/calendly.js",
     "etl:gbp": "node etl/gbp.js",
     "etl:ga4": "node etl/ga4.js",
     "etl:leadtrap": "node etl/leadtrap.js",

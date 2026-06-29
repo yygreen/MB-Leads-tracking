@@ -19,7 +19,6 @@ function emptyTimeline() {
       date: d.toISOString().slice(0, 10),
       callrail: 0,
       forms: 0,
-      calendly: 0,
       leadtrap: 0,
       gbpCalls: 0,
       ga4Sessions: 0,
@@ -37,10 +36,9 @@ function sumLast(timeline, key, days) {
 }
 
 export async function aggregate() {
-  const [callrail, forms, calendly, gbp, ga4, leadtrap] = await Promise.all([
+  const [callrail, forms, gbp, ga4, leadtrap] = await Promise.all([
     readJSON('callrail.json', []),
     readJSON('forms.json', []),
-    readJSON('calendly.json', []),
     readJSON('gbp.json', []),
     readJSON('ga4.json', []),
     readJSON('leadtrap.json', []),
@@ -55,7 +53,6 @@ export async function aggregate() {
 
   callrail.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
-  calendly.forEach((e) => bump(dayKey(e.timestamp), 'calendly'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
   gbp.forEach((g) => bump(g.date, 'gbpCalls', g.calls || 0));
   ga4.forEach((s) => bump(s.date, 'ga4Sessions', s.sessions || 0));
@@ -63,16 +60,14 @@ export async function aggregate() {
   // --- summary + channel mix ---
   const callrail30 = sumLast(timeline, 'callrail', 30);
   const forms30 = sumLast(timeline, 'forms', 30);
-  const calendly30 = sumLast(timeline, 'calendly', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + calendly30 + leadtrap30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + gbpCalls30;
 
   const mixRaw = [
     { channel: 'CallRail', count: callrail30 },
     { channel: 'Forms', count: forms30 },
     { channel: 'GBP Calls', count: gbpCalls30 },
-    { channel: 'Calendly', count: calendly30 },
     { channel: 'Leadtrap', count: leadtrap30 },
   ];
   const mixTotal = mixRaw.reduce((a, c) => a + c.count, 0) || 1;
@@ -139,7 +134,6 @@ export async function aggregate() {
   const sources = [
     { key: 'callrail', label: 'CallRail', status: status(callrail, 'no_data') },
     { key: 'forms', label: 'Webflow Forms', status: status(forms, 'no_data') },
-    { key: 'calendly', label: 'Calendly', status: status(calendly, 'pending') },
     { key: 'gbp', label: 'Google Business Profile', status: status(gbp, 'pending') },
     { key: 'ga4', label: 'GA4', status: status(ga4, 'no_data') },
     { key: 'leadtrap', label: 'Leadtrap', status: status(leadtrap, 'pending') },

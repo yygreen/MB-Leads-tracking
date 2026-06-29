@@ -12,7 +12,7 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: 'Mastermind Behavior · Marketing Lead Tracking',
   description:
-    'Top-of-funnel marketing attribution dashboard — channel volume, UTM source breakdown, and lead activity across CallRail, Webflow Forms, Calendly, GBP, GA4 and Leadtrap.',
+    'Top-of-funnel marketing attribution dashboard — channel volume, UTM source breakdown, and lead activity across CallRail, Webflow Forms, GBP, GA4 and Leadtrap.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

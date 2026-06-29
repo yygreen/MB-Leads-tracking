@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron';
 import { writeJSON } from '@/etl/_lib.js';
 import { pull as pullCallrail } from '@/etl/callrail.js';
-import { pull as pullCalendly } from '@/etl/calendly.js';
 import { pull as pullGbp } from '@/etl/gbp.js';
 import { pull as pullGa4 } from '@/etl/ga4.js';
 import { pull as pullWebflow } from '@/etl/webflow.js';
@@ -25,7 +24,6 @@ export async function POST(req: Request) {
   // leadtrap.json is populated by /api/leadtrap-webhook and must not be wiped.
   const jobs: Array<[string, string, () => Promise<unknown[]>]> = [
     ['callrail', 'callrail.json', pullCallrail],
-    ['calendly', 'calendly.json', pullCalendly],
     ['gbp', 'gbp.json', pullGbp],
     ['ga4', 'ga4.json', pullGa4],
   ];

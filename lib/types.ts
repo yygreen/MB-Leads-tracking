@@ -5,7 +5,6 @@
 export type SourceKey =
   | 'callrail'
   | 'forms'
-  | 'calendly'
   | 'gbp'
   | 'ga4'
   | 'leadtrap';
@@ -17,7 +16,6 @@ export interface TimelinePoint {
   date: string;
   callrail: number;
   forms: number;
-  calendly: number;
   leadtrap: number;
   gbpCalls: number;
   ga4Sessions: number;

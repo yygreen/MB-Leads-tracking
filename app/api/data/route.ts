@@ -33,14 +33,6 @@ function liveSourceStatuses(): SourceStatusRow[] {
       detail: 'Webhook endpoint live',
     },
     {
-      key: 'calendly',
-      label: 'Calendly',
-      // Client confirmed no leads come directly through Calendly (secondary
-      // channel after a form), so it's intentionally not tracked.
-      status: 'na',
-      detail: 'No direct leads',
-    },
-    {
       key: 'gbp',
       label: 'Google Business Profile',
       status: gbp ? 'connected' : 'pending',

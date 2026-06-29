@@ -40,7 +40,7 @@ lib/
 etl/
   _lib.js                  storage abstraction (Vercel Blob ↔ local data/*.json)
   _run.js                  standalone-runner helpers
-  callrail.js calendly.js gbp.js ga4.js leadtrap.js   API pulls
+  callrail.js webflow.js gbp.js ga4.js leadtrap.js   source pulls
   aggregate.js             rolls all sources → dashboard.json
   verify.js guard.js       data-integrity gates
 vercel.json                cron schedule
@@ -51,11 +51,10 @@ vercel.json                cron schedule
 | Source        | Pull method                          | Cron       | Env vars |
 |---------------|--------------------------------------|------------|----------|
 | CallRail      | API v3 (webhook fallback)            | every 15m  | `CALLRAIL_API_KEY`, `CALLRAIL_ACCOUNT_ID` |
-| Webflow Forms | Webhook → `/api/webflow-form`        | real-time  | — (already live) |
-| Calendly      | API v2 token                         | hourly     | `CALENDLY_API_KEY` |
+| Webflow Forms | API pull + webhook → `/api/webflow-form` | every 15m | `WEBFLOW_API_TOKEN` |
 | GBP           | Business Profile Performance + OAuth | daily      | `GBP_CLIENT_ID`, `GBP_CLIENT_SECRET`, `GBP_REFRESH_TOKEN`, `GBP_LOCATION_IDS` |
 | GA4           | Data API + service account           | daily      | `GA4_PROPERTY_ID`, `GA4_SERVICE_ACCOUNT_JSON` (base64) |
-| Leadtrap      | TBD (placeholder)                    | every 15m  | `LEADTRAP_API_KEY` |
+| Leadtrap      | Webhook → `/api/leadtrap-webhook`    | real-time  | — (no API) |
 
 Storage:
 - `BLOB_READ_WRITE_TOKEN` → reads/writes **Vercel Blob**

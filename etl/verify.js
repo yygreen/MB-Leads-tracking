@@ -25,7 +25,7 @@ export function verifyDashboard(data) {
     errors.push('timeline must be an array');
   } else if (data.timeline.length > 0) {
     const p = data.timeline[0];
-    for (const k of ['date', 'callrail', 'forms', 'calendly', 'leadtrap', 'gbpCalls', 'ga4Sessions']) {
+    for (const k of ['date', 'callrail', 'forms', 'leadtrap', 'gbpCalls', 'ga4Sessions']) {
       if (!(k in p)) errors.push(`timeline points missing: ${k}`);
     }
   }

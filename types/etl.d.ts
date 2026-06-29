@@ -11,9 +11,6 @@ declare module '@/etl/_lib.js' {
 declare module '@/etl/callrail.js' {
   export function pull(): Promise<any[]>;
 }
-declare module '@/etl/calendly.js' {
-  export function pull(): Promise<any[]>;
-}
 declare module '@/etl/gbp.js' {
   export function pull(): Promise<any[]>;
 }

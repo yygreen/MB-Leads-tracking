@@ -19,7 +19,6 @@ const SERIES: Array<{ key: keyof TimelinePoint; name: string; color: string }> =
   { key: 'callrail', name: 'CallRail', color: '#34abc7' },
   { key: 'forms', name: 'Forms', color: '#1a2744' },
   { key: 'gbpCalls', name: 'GBP Calls', color: '#e8734a' },
-  { key: 'calendly', name: 'Calendly', color: '#7bbf7e' },
   { key: 'leadtrap', name: 'Leadtrap', color: '#c8b893' },
   { key: 'ga4Sessions', name: 'GA4 Sessions', color: '#db5b4f' },
 ];
@@ -59,8 +58,8 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
             <defs>
               {SERIES.map((s) => (
                 <linearGradient key={s.key} id={`g-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={s.color} stopOpacity={0.5} />
-                  <stop offset="95%" stopColor={s.color} stopOpacity={0.05} />
+                  <stop offset="5%" stopColor={s.color} stopOpacity={0.28} />
+                  <stop offset="95%" stopColor={s.color} stopOpacity={0.03} />
                 </linearGradient>
               ))}
             </defs>
@@ -92,12 +91,14 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
             {SERIES.map((s) => (
               <Area
                 key={s.key}
-                type="monotone"
+                type="linear"
                 dataKey={s.key}
                 name={s.name}
                 stackId="1"
                 stroke={s.color}
-                strokeWidth={1.5}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 3 }}
                 fill={`url(#g-${s.key})`}
               />
             ))}
