@@ -12,24 +12,35 @@ export async function pull() {
     return [];
   }
 
-  const params = new URLSearchParams({
-    fields:
-      'id,start_time,direction,duration,customer_name,customer_phone_number,source_name,utm_source,utm_medium,utm_campaign',
-    start_date: daysAgoISO(180),
-    per_page: '250',
-  });
-  const url = `https://api.callrail.com/v3/a/${accountId}/calls.json?${params}`;
+  const headers = { Authorization: `Token token="${apiKey}"` };
+  const PER_PAGE = 250;
+  const MAX_PAGES = 40; // safety cap (10k calls) against runaway pagination
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Token token="${apiKey}"` },
-  });
-  if (!res.ok) {
-    console.error(`[etl:callrail] API ${res.status}: ${await res.text()}`);
-    return [];
-  }
-  const body = await res.json();
+  const all = [];
+  let page = 1;
+  let totalPages = 1;
+  do {
+    const params = new URLSearchParams({
+      fields:
+        'id,start_time,direction,duration,customer_name,customer_phone_number,source_name,utm_source,utm_medium,utm_campaign',
+      start_date: daysAgoISO(180),
+      per_page: String(PER_PAGE),
+      page: String(page),
+    });
+    const url = `https://api.callrail.com/v3/a/${accountId}/calls.json?${params}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      console.error(`[etl:callrail] API ${res.status} (page ${page}): ${await res.text()}`);
+      break;
+    }
+    const body = await res.json();
+    all.push(...(body.calls || []));
+    // CallRail returns total_pages; fall back to a single page if absent.
+    totalPages = Math.min(body.total_pages || 1, MAX_PAGES);
+    page += 1;
+  } while (page <= totalPages);
 
-  return (body.calls || []).map((c) => ({
+  return all.map((c) => ({
     source: 'callrail',
     id: String(c.id),
     timestamp: c.start_time,
