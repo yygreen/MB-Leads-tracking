@@ -56,26 +56,16 @@ export async function POST(req: Request) {
   }
 
   let totalLeads30d = 0;
-  let utmDebug: any = null;
   try {
     const dashboard = await aggregate();
     await writeJSON('dashboard.json', dashboard);
     totalLeads30d = dashboard.summary.totalLeads30d;
-    const w = (dashboard as any).utmSourcesByWindow || {};
-    utmDebug = {
-      hasField: Boolean((dashboard as any).utmSourcesByWindow),
-      totals: {
-        '30': (w['30'] || []).reduce((a: number, r: any) => a + r.count, 0),
-        '90': (w['90'] || []).reduce((a: number, r: any) => a + r.count, 0),
-        '180': (w['180'] || []).reduce((a: number, r: any) => a + r.count, 0),
-      },
-    };
   } catch (err: any) {
     console.error('[refresh-all:aggregate]', err);
     results.aggregate = { ok: false, error: String(err?.message || err) };
   }
 
-  return NextResponse.json({ ok: true, results, totalLeads30d, utmDebug, ranAt: new Date().toISOString() });
+  return NextResponse.json({ ok: true, results, totalLeads30d, ranAt: new Date().toISOString() });
 }
 
 export async function GET(req: Request) {
