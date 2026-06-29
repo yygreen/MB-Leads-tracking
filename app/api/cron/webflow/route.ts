@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron';
 import { guardedWrite } from '@/etl/guard.js';
-import { pull } from '@/etl/webflow.js';
+import { pull, sampleRaw } from '@/etl/webflow.js';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -13,6 +13,14 @@ export const maxDuration = 120;
 export async function GET(req: Request) {
   if (!authorizeCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+  // ?debug=1 returns the submission structure (no PII) to verify field names.
+  if (new URL(req.url).searchParams.get('debug') === '1') {
+    try {
+      return NextResponse.json({ ok: true, debug: await sampleRaw() });
+    } catch (err: any) {
+      return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
+    }
   }
   try {
     const records = await pull();

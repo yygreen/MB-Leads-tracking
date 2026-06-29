@@ -25,6 +25,7 @@ declare module '@/etl/leadtrap.js' {
 }
 declare module '@/etl/webflow.js' {
   export function pull(): Promise<any[]>;
+  export function sampleRaw(): Promise<any>;
 }
 declare module '@/etl/guard.js' {
   export function guardedWrite<T = unknown>(
