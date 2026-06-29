@@ -68,6 +68,11 @@ export async function GET() {
     data = getMockDashboard();
   }
 
+  // Older dashboard.json (pre source-timeline) may lack these — default safely
+  // until the next aggregate run repopulates them.
+  data.utmTimeline = data.utmTimeline || [];
+  data.utmSeries = data.utmSeries || [];
+
   // Always reflect the real credential state in the status row, regardless of
   // whether the rest of the payload is live or sample data.
   data.sources = liveSourceStatuses();

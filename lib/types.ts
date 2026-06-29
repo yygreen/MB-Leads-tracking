@@ -62,12 +62,28 @@ export interface SourceStatusRow {
   detail?: string;
 }
 
+/** One series in the source/medium timeline (a "source / medium" combo). */
+export interface UTMSeries {
+  key: string;
+  name: string;
+}
+
+/** A day's lead counts keyed by source/medium combo name (plus the date). */
+export interface UTMTimelinePoint {
+  date: string;
+  [combo: string]: number | string;
+}
+
 export interface DashboardData {
   lastUpdated: string;
   summary: SummaryCards;
   timeline: TimelinePoint[];
   channelMix: ChannelMixRow[];
   utmSources: UTMRow[];
+  /** daily lead counts per source/medium, for the source timeline chart */
+  utmTimeline: UTMTimelinePoint[];
+  /** the source/medium combos rendered as series (top combos + "Other") */
+  utmSeries: UTMSeries[];
   forms: FormRow[];
   gbpLocations: GBPLocationRow[];
   sources: SourceStatusRow[];

@@ -94,6 +94,43 @@ export async function aggregate() {
     })
     .sort((a, b) => b.count - a.count);
 
+  // --- source/medium timeline (daily counts per combo, top combos + Other) ---
+  const comboLabel = (r) =>
+    `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
+  const comboTotals = new Map();
+  const comboByDate = new Map(); // date -> Map(combo -> count)
+  [...callrail, ...forms].forEach((r) => {
+    const ts = r.timestamp || r.submittedAt;
+    if (!ts) return;
+    const date = dayKey(ts);
+    if (!index.has(date)) return; // only within the 180-day window
+    const combo = comboLabel(r);
+    comboTotals.set(combo, (comboTotals.get(combo) || 0) + 1);
+    if (!comboByDate.has(date)) comboByDate.set(date, new Map());
+    const dm = comboByDate.get(date);
+    dm.set(combo, (dm.get(combo) || 0) + 1);
+  });
+  const topCombos = [...comboTotals.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([c]) => c);
+  const hasOther = comboTotals.size > topCombos.length;
+  const utmSeries = topCombos.map((c) => ({ key: c, name: c }));
+  if (hasOther) utmSeries.push({ key: 'Other', name: 'Other' });
+  const utmTimeline = timeline.map((p) => {
+    const row = { date: p.date };
+    topCombos.forEach((c) => (row[c] = 0));
+    if (hasOther) row.Other = 0;
+    const dm = comboByDate.get(p.date);
+    if (dm) {
+      for (const [combo, count] of dm.entries()) {
+        if (topCombos.includes(combo)) row[combo] += count;
+        else if (hasOther) row.Other += count;
+      }
+    }
+    return row;
+  });
+
   // --- form-level detail ---
   const formMap = new Map();
   forms.forEach((f) => {
@@ -150,6 +187,8 @@ export async function aggregate() {
     timeline,
     channelMix,
     utmSources,
+    utmTimeline,
+    utmSeries,
     forms: formRows,
     gbpLocations,
     sources,

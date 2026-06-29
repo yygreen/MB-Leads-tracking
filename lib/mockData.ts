@@ -115,6 +115,38 @@ function buildUTM(totalLeads30d: number): UTMRow[] {
     .sort((a, b) => b.count - a.count);
 }
 
+// Distribute each day's lead volume across source/medium combos so the mock
+// source timeline mirrors the channel one.
+const UTM_DIST: Array<{ combo: string; weight: number }> = [
+  { combo: 'google / organic', weight: 0.3 },
+  { combo: '(direct) / (none)', weight: 0.25 },
+  { combo: 'google / cpc', weight: 0.15 },
+  { combo: 'gbp / referral', weight: 0.12 },
+  { combo: 'facebook / paid', weight: 0.1 },
+  { combo: 'referral / referral', weight: 0.08 },
+];
+
+function buildUTMTimeline(timeline: TimelinePoint[]) {
+  const rng = mulberry32(0x5e1d_42ab);
+  const utmSeries = UTM_DIST.map((d) => ({ key: d.combo, name: d.combo }));
+  const utmTimeline = timeline.map((p) => {
+    const total = p.callrail + p.forms + p.leadtrap + p.gbpCalls;
+    const row: { date: string; [k: string]: number | string } = { date: p.date };
+    let assigned = 0;
+    UTM_DIST.forEach((d, i) => {
+      // last combo absorbs the remainder so the day sums to the lead total
+      const v =
+        i === UTM_DIST.length - 1
+          ? total - assigned
+          : Math.round(total * d.weight * (0.7 + rng() * 0.6));
+      row[d.combo] = Math.max(0, v);
+      assigned += row[d.combo] as number;
+    });
+    return row;
+  });
+  return { utmTimeline, utmSeries };
+}
+
 function buildForms(formTotal30d: number): FormRow[] {
   const dist: Array<{ name: string; weight: number }> = [
     { name: 'Contact Form', weight: 0.6 },
@@ -187,6 +219,7 @@ export function getMockDashboard(): DashboardData {
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
   const totalLeads30d = callrail30 + forms30 + leadtrap30 + gbpCalls30;
+  const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
 
   return {
     lastUpdated: new Date().toISOString(),
@@ -199,6 +232,8 @@ export function getMockDashboard(): DashboardData {
     timeline,
     channelMix: buildChannelMix(timeline),
     utmSources: buildUTM(totalLeads30d),
+    utmTimeline,
+    utmSeries,
     forms: buildForms(forms30),
     gbpLocations: buildGBPLocations(),
     sources: buildSources(),

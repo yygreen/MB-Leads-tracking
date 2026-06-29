@@ -6,6 +6,7 @@ import TopBar from '@/components/TopBar';
 import SummaryCards from '@/components/SummaryCards';
 import ChannelTimeline from '@/components/ChannelTimeline';
 import SessionsSparkline from '@/components/SessionsSparkline';
+import SourceTimeline from '@/components/SourceTimeline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
 import FormBreakdown from '@/components/FormBreakdown';
@@ -107,6 +108,13 @@ export default function Page() {
         desc="Attribution from the live UTM tracking installed on mastermindbehavior.com."
       >
         <UTMBreakdown rows={data.utmSources} />
+      </Section>
+
+      <Section
+        title="Source / Medium Timeline"
+        desc="Daily lead volume by UTM source & medium — where leads come from, over time."
+      >
+        <SourceTimeline utmTimeline={data.utmTimeline} utmSeries={data.utmSeries} />
       </Section>
 
       <Section title="Form-Level Detail" desc="Submission counts per Webflow form, last 30 days.">
