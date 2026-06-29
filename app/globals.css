@@ -1,10 +1,13 @@
 :root {
+  /* Aligned to the Mastermind Behavior style guide */
   --navy: #1a2744;
-  --teal: #3ba5a8;
-  --teal-pale: #e8f6f6;
+  --teal: #34abc7; /* MB brand blue */
+  --teal-deep: #2f8487; /* MB deep teal */
+  --ink-deep: #002833; /* MB blue-dark */
+  --teal-pale: #e6f5f9;
   --warm: #f9f6f1;
   --accent: #e8734a;
-  --cta: #db5b4f;
+  --cta: #db5b4f; /* MB brand red */
   --text: #2c2c2c;
   --soft: #5a5a5a;
   --rule: #e6e2da;
@@ -66,6 +69,16 @@ a {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+.brand-logo {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+@media (max-width: 480px) {
+  .brand-logo {
+    height: 36px;
+  }
 }
 .brand-divider {
   width: 1px;

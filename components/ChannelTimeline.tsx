@@ -16,7 +16,7 @@ import type { TimelinePoint } from '@/lib/types';
 type Range = 30 | 90 | 180;
 
 const SERIES: Array<{ key: keyof TimelinePoint; name: string; color: string }> = [
-  { key: 'callrail', name: 'CallRail', color: '#3ba5a8' },
+  { key: 'callrail', name: 'CallRail', color: '#34abc7' },
   { key: 'forms', name: 'Forms', color: '#1a2744' },
   { key: 'gbpCalls', name: 'GBP Calls', color: '#e8734a' },
   { key: 'calendly', name: 'Calendly', color: '#7bbf7e' },

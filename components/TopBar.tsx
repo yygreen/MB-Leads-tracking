@@ -1,7 +1,5 @@
 'use client';
 
-import Logo from './Logo';
-
 function formatTimestamp(iso: string): string {
   if (!iso) return '—';
   const d = new Date(iso);
@@ -26,7 +24,12 @@ export default function TopBar({
     <header className="topbar">
       <div className="shell topbar-inner">
         <div className="brand">
-          <Logo height={42} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/mastermind-logo.png"
+            alt="Mastermind Behavior Services"
+            className="brand-logo"
+          />
           <span className="brand-divider" aria-hidden />
           <span className="brand-sub">Marketing Lead Tracking</span>
         </div>
