@@ -63,6 +63,13 @@ async function writeBlob(filename, data) {
     contentType: 'application/json',
     addRandomSuffix: false,
     allowOverwrite: true,
+    // We overwrite the same pathname on every ETL run, so the blob's download
+    // URL is stable. Vercel Blob defaults to a 1-year cache, which means a
+    // freshly-written file keeps serving its OLD content from the CDN edge —
+    // making read-after-write return stale data (e.g. aggregate missing a lead
+    // a webhook just appended). cacheControlMaxAge: 0 disables that edge cache
+    // so reads always reflect the latest write.
+    cacheControlMaxAge: 0,
   });
 }
 
