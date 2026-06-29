@@ -79,7 +79,7 @@ export async function aggregate() {
   const utmMap = new Map();
   const recent = (ts) =>
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
-  [...callrail, ...forms].forEach((r) => {
+  [...callrail, ...forms, ...leadtrap].forEach((r) => {
     const ts = r.timestamp || r.submittedAt;
     if (ts && !recent(ts)) return;
     const source = r.utm_source || '(direct)';
@@ -99,7 +99,7 @@ export async function aggregate() {
     `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
   const comboTotals = new Map();
   const comboByDate = new Map(); // date -> Map(combo -> count)
-  [...callrail, ...forms].forEach((r) => {
+  [...callrail, ...forms, ...leadtrap].forEach((r) => {
     const ts = r.timestamp || r.submittedAt;
     if (!ts) return;
     const date = dayKey(ts);
