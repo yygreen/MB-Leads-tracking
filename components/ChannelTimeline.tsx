@@ -71,8 +71,8 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
             <defs>
               {SERIES.map((s) => (
                 <linearGradient key={s.key} id={`g-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={s.color} stopOpacity={0.28} />
-                  <stop offset="95%" stopColor={s.color} stopOpacity={0.03} />
+                  <stop offset="5%" stopColor={s.color} stopOpacity={0.9} />
+                  <stop offset="95%" stopColor={s.color} stopOpacity={0.55} />
                 </linearGradient>
               ))}
             </defs>
