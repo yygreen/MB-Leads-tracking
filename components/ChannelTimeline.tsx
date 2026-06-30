@@ -17,8 +17,8 @@ import {
 // per-source colours so it reads as the envelope, not a channel.
 const TOTAL_COLOR = '#475569';
 import type { TimelinePoint } from '@/lib/types';
-
-type Range = 30 | 90 | 180;
+import type { DateRange } from '@/lib/dateRange';
+import { inRange } from '@/lib/dateRange';
 
 const SERIES: Array<{ key: keyof TimelinePoint; name: string; color: string }> = [
   { key: 'callrail', name: 'CallRail', color: '#34abc7' },
@@ -37,38 +37,27 @@ function shortDate(iso: string): string {
 export default function ChannelTimeline({
   timeline,
   range,
-  onRangeChange,
 }: {
   timeline: TimelinePoint[];
-  range: Range;
-  onRangeChange: (r: Range) => void;
+  range: DateRange;
 }) {
   const data = useMemo(
     () =>
-      timeline.slice(-range).map((p) => ({
-        ...p,
-        total: SERIES.reduce((sum, s) => sum + ((p[s.key] as number) || 0), 0),
-      })),
+      timeline
+        .filter((p) => inRange(p.date, range))
+        .map((p) => ({
+          ...p,
+          total: SERIES.reduce((sum, s) => sum + ((p[s.key] as number) || 0), 0),
+        })),
     [timeline, range]
   );
-  const tickGap = range === 30 ? 4 : range === 90 ? 12 : 24;
+  const tickGap = Math.max(0, Math.floor(data.length / 12));
 
   return (
     <div className="card card-pad">
       <div className="row-flex" style={{ marginBottom: 16 }}>
         <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
           Daily activity by source
-        </div>
-        <div className="toggle">
-          {([30, 90, 180] as Range[]).map((r) => (
-            <button
-              key={r}
-              className={r === range ? 'active' : ''}
-              onClick={() => onRangeChange(r)}
-            >
-              {r}d
-            </button>
-          ))}
         </div>
       </div>
       <div style={{ width: '100%', height: 340 }}>

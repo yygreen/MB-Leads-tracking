@@ -11,6 +11,7 @@ export default function PeriodControl({
   maxDate,
   onPreset,
   onCustom,
+  label = 'Reporting period',
 }: {
   presetKey: PresetKey;
   range: DateRange;
@@ -18,11 +19,12 @@ export default function PeriodControl({
   maxDate: string;
   onPreset: (key: PresetKey) => void;
   onCustom: (range: DateRange) => void;
+  label?: string;
 }) {
   return (
     <div className="period-bar">
       <div className="period-head">
-        <span className="period-title">Reporting period</span>
+        <span className="period-title">{label}</span>
         <span className="period-resolved">{rangeLabel(range)}</span>
       </div>
       <div className="period-controls">

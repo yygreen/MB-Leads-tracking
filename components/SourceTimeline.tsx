@@ -13,8 +13,8 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { UTMTimelinePoint, UTMSeries } from '@/lib/types';
-
-type Range = 30 | 90 | 180;
+import type { DateRange } from '@/lib/dateRange';
+import { inRange } from '@/lib/dateRange';
 
 // Palette for the source/medium series (assigned by order). "Other" gets a
 // neutral grey. The Total line uses a distinct slate, like the channel chart.
@@ -31,25 +31,25 @@ export default function SourceTimeline({
   utmTimeline,
   utmSeries,
   range,
-  onRangeChange,
 }: {
   utmTimeline: UTMTimelinePoint[];
   utmSeries: UTMSeries[];
-  range: Range;
-  onRangeChange: (r: Range) => void;
+  range: DateRange;
 }) {
   const colorFor = (key: string, i: number) =>
     key === 'Other' ? OTHER_COLOR : PALETTE[i % PALETTE.length];
 
   const data = useMemo(
     () =>
-      utmTimeline.slice(-range).map((p) => ({
-        ...p,
-        total: utmSeries.reduce((sum, s) => sum + ((p[s.key] as number) || 0), 0),
-      })),
+      utmTimeline
+        .filter((p) => inRange(p.date as string, range))
+        .map((p) => ({
+          ...p,
+          total: utmSeries.reduce((sum, s) => sum + ((p[s.key] as number) || 0), 0),
+        })),
     [utmTimeline, utmSeries, range]
   );
-  const tickGap = range === 30 ? 4 : range === 90 ? 12 : 24;
+  const tickGap = Math.max(0, Math.floor(data.length / 12));
 
   if (!utmSeries?.length) {
     return (
@@ -66,13 +66,6 @@ export default function SourceTimeline({
       <div className="row-flex" style={{ marginBottom: 16 }}>
         <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
           Daily leads by source / medium
-        </div>
-        <div className="toggle">
-          {([30, 90, 180] as Range[]).map((r) => (
-            <button key={r} className={r === range ? 'active' : ''} onClick={() => onRangeChange(r)}>
-              {r}d
-            </button>
-          ))}
         </div>
       </div>
       <div style={{ width: '100%', height: 340 }}>
