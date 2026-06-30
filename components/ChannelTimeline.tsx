@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import ChartLegend from './ChartLegend';
 
 // Neutral colour for the cumulative Total line — deliberately not one of the
 // per-source colours so it reads as the envelope, not a channel.
@@ -95,7 +96,7 @@ export default function ChannelTimeline({
                 boxShadow: '0 4px 16px rgba(26,39,68,0.1)',
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 12.5, paddingTop: 8 }} iconType="circle" />
+            <Legend content={(p: any) => <ChartLegend payload={p?.payload} />} />
             {SERIES.map((s) => (
               <Area
                 key={s.key}

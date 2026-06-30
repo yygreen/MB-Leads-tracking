@@ -12,6 +12,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import ChartLegend from './ChartLegend';
 import type { UTMTimelinePoint, UTMSeries } from '@/lib/types';
 import type { DateRange } from '@/lib/dateRange';
 import { inRange } from '@/lib/dateRange';
@@ -103,7 +104,7 @@ export default function SourceTimeline({
                 boxShadow: '0 4px 16px rgba(26,39,68,0.1)',
               }}
             />
-            <Legend wrapperStyle={{ fontSize: 12.5, paddingTop: 8 }} iconType="circle" />
+            <Legend content={(p: any) => <ChartLegend payload={p?.payload} />} />
             {utmSeries.map((s, i) => (
               <Area
                 key={s.key}
