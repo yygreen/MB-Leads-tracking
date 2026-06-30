@@ -1,9 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { TimelinePoint } from '@/lib/types';
-
-type Range = 30 | 90 | 180;
+import type { DateRange } from '@/lib/dateRange';
+import { inRange } from '@/lib/dateRange';
 
 const CHANNELS: Array<{ channel: string; key: keyof TimelinePoint }> = [
   { channel: 'CallRail', key: 'callrail' },
@@ -12,11 +12,15 @@ const CHANNELS: Array<{ channel: string; key: keyof TimelinePoint }> = [
   { channel: 'Leadtrap', key: 'leadtrap' },
 ];
 
-export default function ChannelMixTable({ timeline }: { timeline: TimelinePoint[] }) {
-  const [range, setRange] = useState<Range>(30);
-
+export default function ChannelMixTable({
+  timeline,
+  range,
+}: {
+  timeline: TimelinePoint[];
+  range: DateRange;
+}) {
   const rows = useMemo(() => {
-    const slice = timeline.slice(-range);
+    const slice = timeline.filter((p) => inRange(p.date, range));
     const counts = CHANNELS.map((c) => ({
       channel: c.channel,
       count: slice.reduce((a, p) => a + ((p[c.key] as number) || 0), 0),
@@ -31,23 +35,11 @@ export default function ChannelMixTable({ timeline }: { timeline: TimelinePoint[
 
   return (
     <div className="card card-pad">
-      <div className="row-flex" style={{ marginBottom: 16 }}>
-        <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
-          Lead share by channel
-        </div>
-        <div className="toggle">
-          {([30, 90, 180] as Range[]).map((r) => (
-            <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>
-              {r}d
-            </button>
-          ))}
-        </div>
-      </div>
       <table className="table">
         <thead>
           <tr>
             <th>Channel</th>
-            <th className="num">{range}-day count</th>
+            <th className="num">Count</th>
             <th style={{ width: '38%' }}>Share</th>
             <th className="num">% of total</th>
           </tr>

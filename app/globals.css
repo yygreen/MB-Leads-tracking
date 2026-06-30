@@ -283,6 +283,61 @@ section.block:last-child {
   box-shadow: var(--shadow);
 }
 
+/* ---- reporting period control ---- */
+.period-bar {
+  background: var(--card, #fff);
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+.period-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.period-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+.period-resolved {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--navy);
+}
+.period-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.period-presets {
+  flex-wrap: wrap;
+}
+.period-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.period-custom input[type='date'] {
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--navy);
+  background: var(--warm);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.period-dash {
+  color: var(--soft);
+  font-size: 13px;
+}
+
 /* ---- status pills ---- */
 .pills {
   display: grid;

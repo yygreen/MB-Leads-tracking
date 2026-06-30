@@ -77,13 +77,10 @@ export async function GET() {
   // until the next aggregate run repopulates them.
   data.utmTimeline = data.utmTimeline || [];
   data.utmSeries = data.utmSeries || [];
-  // Older dashboard.json predates windowed UTM — fall back to the 30-day list
-  // for every window until the next aggregate run repopulates it.
-  data.utmSourcesByWindow = data.utmSourcesByWindow || {
-    '30': data.utmSources || [],
-    '90': data.utmSources || [],
-    '180': data.utmSources || [],
-  };
+  // Older dashboard.json predates raw utmRecords — default to empty until the
+  // next aggregate run repopulates it (the breakdown then shows no rows rather
+  // than wrong ones).
+  data.utmRecords = data.utmRecords || [];
 
   // Always reflect the real credential state in the status row, regardless of
   // whether the rest of the payload is live or sample data.

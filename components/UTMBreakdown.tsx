@@ -1,29 +1,43 @@
 'use client';
 
-import { useState } from 'react';
-import type { UTMWindows } from '@/lib/types';
+import { useMemo } from 'react';
+import type { UTMRecord } from '@/lib/types';
+import type { DateRange } from '@/lib/dateRange';
+import { inRange } from '@/lib/dateRange';
 
-type Range = '30' | '90' | '180';
+export default function UTMBreakdown({
+  records,
+  range,
+}: {
+  records: UTMRecord[];
+  range: DateRange;
+}) {
+  const rows = useMemo(() => {
+    const m = new Map<string, { source: string; medium: string; count: number }>();
+    records.forEach((r) => {
+      if (!inRange(r.date, range)) return;
+      const key = `${r.source}|${r.medium}`;
+      const cur = m.get(key) || { source: r.source, medium: r.medium, count: 0 };
+      cur.count += 1;
+      m.set(key, cur);
+    });
+    return [...m.values()].sort((a, b) => b.count - a.count);
+  }, [records, range]);
 
-export default function UTMBreakdown({ windows }: { windows: UTMWindows }) {
-  const [range, setRange] = useState<Range>('30');
-  const rows = windows[range] || [];
   const total = rows.reduce((a, r) => a + r.count, 0) || 1;
+
+  if (!rows.length) {
+    return (
+      <div className="card card-pad">
+        <div className="loading" style={{ padding: '32px 0' }}>
+          No attributed leads in this period.
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="card card-pad">
-      <div className="row-flex" style={{ marginBottom: 16 }}>
-        <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
-          Attribution by source / medium
-        </div>
-        <div className="toggle">
-          {(['30', '90', '180'] as Range[]).map((r) => (
-            <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>
-              {r}d
-            </button>
-          ))}
-        </div>
-      </div>
       <table className="table">
         <thead>
           <tr>

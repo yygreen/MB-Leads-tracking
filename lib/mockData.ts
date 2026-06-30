@@ -3,6 +3,7 @@ import type {
   TimelinePoint,
   ChannelMixRow,
   UTMRow,
+  UTMRecord,
   FormRow,
   GBPLocationRow,
   SourceStatusRow,
@@ -115,15 +116,21 @@ function buildUTM(totalLeads30d: number): UTMRow[] {
     .sort((a, b) => b.count - a.count);
 }
 
-function buildUTMWindows(timeline: TimelinePoint[]) {
-  const leadKeys: Array<keyof TimelinePoint> = ['callrail', 'forms', 'leadtrap', 'gbpCalls'];
-  const leadsIn = (days: number) =>
-    leadKeys.reduce((a, k) => a + sumLast(timeline, k, days), 0);
-  return {
-    '30': buildUTM(leadsIn(30)),
-    '90': buildUTM(leadsIn(90)),
-    '180': buildUTM(leadsIn(180)),
-  };
+// Expand the daily mock source/medium timeline into one row per lead, so the
+// UTM breakdown can be recomputed for any reporting period (mirrors how the
+// real aggregate emits utmRecords).
+function buildUTMRecords(
+  utmTimeline: Array<{ date: string; [k: string]: number | string }>
+): UTMRecord[] {
+  const records: UTMRecord[] = [];
+  utmTimeline.forEach((row) => {
+    UTM_DIST.forEach((d) => {
+      const [source, medium] = d.combo.split(' / ');
+      const n = (row[d.combo] as number) || 0;
+      for (let i = 0; i < n; i++) records.push({ date: row.date as string, source, medium });
+    });
+  });
+  return records;
 }
 
 // Distribute each day's lead volume across source/medium combos so the mock
@@ -243,7 +250,7 @@ export function getMockDashboard(): DashboardData {
     timeline,
     channelMix: buildChannelMix(timeline),
     utmSources: buildUTM(totalLeads30d),
-    utmSourcesByWindow: buildUTMWindows(timeline),
+    utmRecords: buildUTMRecords(utmTimeline),
     utmTimeline,
     utmSeries,
     forms: buildForms(forms30),

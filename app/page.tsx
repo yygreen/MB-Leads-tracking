@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DashboardData } from '@/lib/types';
+import type { DateRange, PresetKey } from '@/lib/dateRange';
+import { presetRange } from '@/lib/dateRange';
 import TopBar from '@/components/TopBar';
+import PeriodControl from '@/components/PeriodControl';
 import SummaryCards from '@/components/SummaryCards';
 import ChannelTimeline from '@/components/ChannelTimeline';
 import SessionsSparkline from '@/components/SessionsSparkline';
@@ -37,6 +40,8 @@ function Section({
 export default function Page() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [presetKey, setPresetKey] = useState<PresetKey>('last30');
+  const [customRange, setCustomRange] = useState<DateRange | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch('/api/data', { cache: 'no-store' });
@@ -59,6 +64,28 @@ export default function Page() {
     }
   }, [load]);
 
+  const minDate = data?.timeline?.[0]?.date ?? '';
+  const maxDate = data?.timeline?.length ? data.timeline[data.timeline.length - 1].date : '';
+  const range = useMemo<DateRange>(() => {
+    if (!minDate || !maxDate) return { from: minDate, to: maxDate };
+    if (presetKey === 'custom' && customRange) {
+      // keep custom range within the data's extent
+      const from = customRange.from < minDate ? minDate : customRange.from;
+      const to = customRange.to > maxDate ? maxDate : customRange.to;
+      return { from: from > to ? to : from, to };
+    }
+    return presetRange(presetKey, minDate, maxDate);
+  }, [presetKey, customRange, minDate, maxDate]);
+
+  const handlePreset = useCallback((key: PresetKey) => {
+    setPresetKey(key);
+    if (key !== 'custom') setCustomRange(null);
+  }, []);
+  const handleCustom = useCallback((r: DateRange) => {
+    setPresetKey('custom');
+    setCustomRange(r);
+  }, []);
+
   if (!data) {
     return (
       <>
@@ -78,8 +105,19 @@ export default function Page() {
         </div>
       )}
 
-      <Section title="Overview" desc="Top-of-funnel marketing activity across all lead sources, last 30 days.">
-        <SummaryCards summary={data.summary} />
+      <Section
+        title="Overview"
+        desc="Top-of-funnel marketing activity across all lead sources. Pick a reporting period — a calendar month or a custom range — to drive the totals, channel mix, and UTM breakdown below."
+      >
+        <PeriodControl
+          presetKey={presetKey}
+          range={range}
+          minDate={minDate}
+          maxDate={maxDate}
+          onPreset={handlePreset}
+          onCustom={handleCustom}
+        />
+        <SummaryCards timeline={data.timeline} range={range} />
       </Section>
 
       <Section
@@ -89,8 +127,8 @@ export default function Page() {
         <ChannelTimeline timeline={data.timeline} />
       </Section>
 
-      <Section title="Channel Mix" desc="Where leads came from, by volume. Toggle 30 / 90 / 180 days.">
-        <ChannelMixTable timeline={data.timeline} />
+      <Section title="Channel Mix" desc="Where leads came from, by volume, for the selected reporting period.">
+        <ChannelMixTable timeline={data.timeline} range={range} />
       </Section>
 
       <Section
@@ -102,9 +140,9 @@ export default function Page() {
 
       <Section
         title="UTM Source Breakdown"
-        desc="Attribution from UTM tracking on mastermindbehavior.com. ⚠️ Tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so the 90- and 180-day windows mostly predate tracking and understate real attribution. The 30-day view is the most representative."
+        desc="Attribution for the selected reporting period. ⚠️ UTM tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so periods reaching earlier than mid-June understate real attribution."
       >
-        <UTMBreakdown windows={data.utmSourcesByWindow} />
+        <UTMBreakdown records={data.utmRecords} range={range} />
       </Section>
 
       <Section

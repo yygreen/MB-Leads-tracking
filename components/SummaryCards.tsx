@@ -1,16 +1,38 @@
-import type { SummaryCards as Summary } from '@/lib/types';
+'use client';
+
+import { useMemo } from 'react';
+import type { TimelinePoint } from '@/lib/types';
+import type { DateRange } from '@/lib/dateRange';
+import { inRange } from '@/lib/dateRange';
 
 function fmt(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-export default function SummaryCards({ summary }: { summary: Summary }) {
+export default function SummaryCards({
+  timeline,
+  range,
+}: {
+  timeline: TimelinePoint[];
+  range: DateRange;
+}) {
+  const totals = useMemo(() => {
+    const slice = timeline.filter((p) => inRange(p.date, range));
+    const sum = (k: keyof TimelinePoint) => slice.reduce((a, p) => a + ((p[k] as number) || 0), 0);
+    const callrail = sum('callrail');
+    const forms = sum('forms');
+    const gbp = sum('gbpCalls');
+    const leadtrap = sum('leadtrap');
+    return { callrail, forms, gbp, leadtrap, total: callrail + forms + gbp + leadtrap };
+  }, [timeline, range]);
+
   const cards = [
-    { label: 'Total Leads (30d)', value: summary.totalLeads30d, foot: 'All channels combined' },
-    { label: 'CallRail Calls', value: summary.callrailCalls30d, foot: 'Tracked phone calls (30d)' },
-    { label: 'Form Submissions', value: summary.formSubmissions30d, foot: 'Webflow forms (30d)' },
-    { label: 'GBP Direct Calls', value: summary.gbpDirectCalls30d, foot: 'Google profile calls (30d)' },
+    { label: 'Total Leads', value: totals.total, foot: 'All channels combined' },
+    { label: 'CallRail Calls', value: totals.callrail, foot: 'Tracked phone calls' },
+    { label: 'Form Submissions', value: totals.forms, foot: 'Webflow forms' },
+    { label: 'GBP Direct Calls', value: totals.gbp, foot: 'Google profile calls' },
   ];
+
   return (
     <div className="summary-grid">
       {cards.map((c) => (

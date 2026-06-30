@@ -76,34 +76,35 @@ export async function aggregate() {
     .map((c) => ({ ...c, pct: Math.round((c.count / mixTotal) * 1000) / 10 }))
     .sort((a, b) => b.count - a.count);
 
-  // --- UTM breakdown by window (from callrail + forms + leadtrap) ---
+  // --- UTM raw rows (within the 180-day window) for arbitrary-period views ---
   const recent = (ts) =>
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
-  const utmRecords = [...callrail, ...forms, ...leadtrap];
-  const utmBreakdown = (days) => {
-    const cutoff = Date.now() - days * 86400000;
-    const m = new Map();
-    utmRecords.forEach((r) => {
-      const ts = r.timestamp || r.submittedAt;
-      if (!ts || new Date(ts).getTime() < cutoff) return;
-      const source = r.utm_source || '(direct)';
-      const medium = r.utm_medium || '(none)';
-      const key = `${source}|${medium}`;
-      m.set(key, (m.get(key) || 0) + 1);
+  const utmRecords = [];
+  [...callrail, ...forms, ...leadtrap].forEach((r) => {
+    const ts = r.timestamp || r.submittedAt;
+    if (!ts) return;
+    const date = dayKey(ts);
+    if (!index.has(date)) return; // only within the 180-day window
+    utmRecords.push({
+      date,
+      source: r.utm_source || '(direct)',
+      medium: r.utm_medium || '(none)',
     });
-    return [...m.entries()]
-      .map(([k, count]) => {
-        const [source, medium] = k.split('|');
-        return { source, medium, count };
-      })
-      .sort((a, b) => b.count - a.count);
-  };
-  const utmSourcesByWindow = {
-    '30': utmBreakdown(30),
-    '90': utmBreakdown(90),
-    '180': utmBreakdown(180),
-  };
-  const utmSources = utmSourcesByWindow['30'];
+  });
+  // utmSources keeps a 30-day breakdown for any legacy consumer.
+  const last30Dates = new Set(timeline.slice(-30).map((p) => p.date));
+  const utm30 = new Map();
+  utmRecords.forEach((r) => {
+    if (!last30Dates.has(r.date)) return;
+    const key = `${r.source}|${r.medium}`;
+    utm30.set(key, (utm30.get(key) || 0) + 1);
+  });
+  const utmSources = [...utm30.entries()]
+    .map(([k, count]) => {
+      const [source, medium] = k.split('|');
+      return { source, medium, count };
+    })
+    .sort((a, b) => b.count - a.count);
 
   // --- source/medium timeline (daily counts per combo, top combos + Other) ---
   const comboLabel = (r) =>
@@ -198,7 +199,7 @@ export async function aggregate() {
     timeline,
     channelMix,
     utmSources,
-    utmSourcesByWindow,
+    utmRecords,
     utmTimeline,
     utmSeries,
     forms: formRows,
