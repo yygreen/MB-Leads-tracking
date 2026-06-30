@@ -37,7 +37,7 @@ function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
       status: gbp ? 'connected' : 'pending',
       detail: gbp
         ? 'Performance API · backfills ~6mo history'
-        : '2 of 4 profiles managed · awaiting OAuth (backfills history)',
+        : 'awaiting OAuth (backfills history)',
     },
     {
       key: 'ga4',
@@ -50,7 +50,7 @@ function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
     {
       key: 'leadtrap',
       label: 'Leadtrap',
-      status: leadtrapLeads > 0 ? 'connected' : 'pending',
+      status: 'connected',
       detail: leadtrapLeads > 0
         ? 'Webhook live · forward-only'
         : 'Webhook live · forward-only, awaiting leads',
