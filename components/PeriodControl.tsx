@@ -2,6 +2,7 @@
 
 import type { DateRange, PresetKey } from '@/lib/dateRange';
 import { PRESETS, rangeLabel } from '@/lib/dateRange';
+import DateField from './DateField';
 
 export default function PeriodControl({
   presetKey,
@@ -37,22 +38,20 @@ export default function PeriodControl({
           ))}
         </div>
         <div className="period-custom">
-          <input
-            type="date"
-            aria-label="From date"
+          <DateField
+            ariaLabel="From date"
             value={range.from}
             min={minDate}
             max={range.to}
-            onChange={(e) => onCustom({ from: e.target.value || minDate, to: range.to })}
+            onChange={(d) => onCustom({ from: d, to: range.to })}
           />
           <span className="period-dash">→</span>
-          <input
-            type="date"
-            aria-label="To date"
+          <DateField
+            ariaLabel="To date"
             value={range.to}
             min={range.from}
             max={maxDate}
-            onChange={(e) => onCustom({ from: range.from, to: e.target.value || maxDate })}
+            onChange={(d) => onCustom({ from: range.from, to: d })}
           />
         </div>
       </div>

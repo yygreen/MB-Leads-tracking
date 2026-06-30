@@ -323,19 +323,108 @@ section.block:last-child {
   align-items: center;
   gap: 8px;
 }
-.period-custom input[type='date'] {
+.period-dash {
+  color: var(--soft);
+  font-size: 13px;
+}
+
+/* ---- custom (locale-independent) date field ---- */
+.datefield {
+  position: relative;
+  display: inline-block;
+}
+.datefield-btn {
   font-family: inherit;
   font-size: 12.5px;
+  font-weight: 600;
   color: var(--navy);
   background: var(--warm);
   border: 1px solid var(--rule);
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 6px 12px;
+  cursor: pointer;
+  min-width: 110px;
+  text-align: center;
+}
+.datefield-pop {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  background: #fff;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgba(26, 39, 68, 0.16);
+  padding: 12px;
+  width: 248px;
+}
+.df-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.df-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy);
+}
+.df-head button {
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--navy);
+  background: var(--warm);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
   cursor: pointer;
 }
-.period-dash {
+.df-head button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.df-weekdays,
+.df-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.df-weekdays span {
+  text-align: center;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--soft);
-  font-size: 13px;
+  padding: 4px 0;
+}
+.df-grid {
+  margin-top: 2px;
+}
+.df-empty {
+  height: 28px;
+}
+.df-day {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--navy);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  height: 28px;
+  cursor: pointer;
+}
+.df-day:hover:not(:disabled) {
+  background: var(--warm);
+}
+.df-day.sel {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 700;
+}
+.df-day:disabled {
+  color: var(--rule);
+  cursor: default;
 }
 
 /* ---- status pills ---- */
