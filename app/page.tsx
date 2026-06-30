@@ -140,26 +140,23 @@ export default function Page() {
       </Section>
 
       <Section
-        title="Channel Volume Timeline"
-        desc="Daily lead activity by source. Toggle the range to see 30, 90, or 180 days — the Channel Mix below matches it."
+        title="Lead Channels"
+        desc="Where leads come from, by channel — the volume over time and the mix for the same range. Use the timeline's 30 / 90 / 180-day toggle; the mix below follows it."
       >
         <ChannelTimeline
           timeline={data.timeline}
           range={channelRange}
           onRangeChange={setChannelRange}
         />
+        <div className="subsection">
+          <div className="subsection-label">Channel mix · last {channelRange} days</div>
+          <ChannelMixTable timeline={data.timeline} range={channelDateRange} />
+        </div>
       </Section>
 
       <Section
-        title="Channel Mix"
-        desc={`Where leads came from, by volume — matches the ${channelRange}-day range selected in the Channel Volume Timeline above.`}
-      >
-        <ChannelMixTable timeline={data.timeline} range={channelDateRange} />
-      </Section>
-
-      <Section
-        title="Source / Medium Timeline"
-        desc="Daily lead volume by UTM source & medium — the UTM Source Breakdown below matches the range you pick here. ⚠️ UTM tracking went live the week of June 15, 2026 — dates before then predate tagging, so earlier leads aren't attributed."
+        title="Lead Sources / Mediums"
+        desc="Where leads come from, by UTM source & medium — the volume over time and the breakdown for the same range. ⚠️ UTM tracking went live the week of June 15, 2026; periods reaching earlier than mid-June show untagged leads as (direct)."
       >
         <SourceTimeline
           utmTimeline={data.utmTimeline}
@@ -167,13 +164,10 @@ export default function Page() {
           range={sourceRange}
           onRangeChange={setSourceRange}
         />
-      </Section>
-
-      <Section
-        title="UTM Source Breakdown"
-        desc={`Attribution over the ${sourceRange}-day range selected in the Source / Medium Timeline above. ⚠️ UTM tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so the 90- and 180-day ranges understate real attribution.`}
-      >
-        <UTMBreakdown records={data.utmRecords} range={sourceDateRange} />
+        <div className="subsection">
+          <div className="subsection-label">Source / medium breakdown · last {sourceRange} days</div>
+          <UTMBreakdown records={data.utmRecords} range={sourceDateRange} />
+        </div>
       </Section>
 
       <Section

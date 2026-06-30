@@ -145,6 +145,18 @@ section.block:last-child {
   color: var(--soft);
   margin: 4px 0 0;
 }
+/* a labelled sub-block within a section (e.g. the mix under its timeline) */
+.subsection {
+  margin-top: 18px;
+}
+.subsection-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--soft);
+  margin-bottom: 10px;
+}
 
 /* ---- card ---- */
 .card {
