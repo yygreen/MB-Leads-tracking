@@ -42,6 +42,9 @@ export default function Page() {
   const [refreshing, setRefreshing] = useState(false);
   const [presetKey, setPresetKey] = useState<PresetKey>('last30');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
+  // Each trend timeline owns a rolling range; its companion table mirrors it.
+  const [channelRange, setChannelRange] = useState<30 | 90 | 180>(90);
+  const [sourceRange, setSourceRange] = useState<30 | 90 | 180>(90);
 
   const load = useCallback(async () => {
     const res = await fetch('/api/data', { cache: 'no-store' });
@@ -86,6 +89,22 @@ export default function Page() {
     setCustomRange(r);
   }, []);
 
+  // The two breakdown tables mirror their timeline's rolling range.
+  const channelDateRange = useMemo<DateRange>(
+    () =>
+      minDate && maxDate
+        ? presetRange(`last${channelRange}` as PresetKey, minDate, maxDate)
+        : { from: minDate, to: maxDate },
+    [channelRange, minDate, maxDate]
+  );
+  const sourceDateRange = useMemo<DateRange>(
+    () =>
+      minDate && maxDate
+        ? presetRange(`last${sourceRange}` as PresetKey, minDate, maxDate)
+        : { from: minDate, to: maxDate },
+    [sourceRange, minDate, maxDate]
+  );
+
   if (!data) {
     return (
       <>
@@ -107,7 +126,7 @@ export default function Page() {
 
       <Section
         title="Overview"
-        desc="Top-of-funnel marketing activity across all lead sources. Pick a reporting period — a calendar month or a custom range — to drive the totals, channel mix, and UTM breakdown below."
+        desc="Top-of-funnel marketing activity across all lead sources. Pick a reporting period — a calendar month or a custom range — to set the headline totals below."
       >
         <PeriodControl
           presetKey={presetKey}
@@ -122,27 +141,39 @@ export default function Page() {
 
       <Section
         title="Channel Volume Timeline"
-        desc="Daily lead activity by source. Toggle the range to see 30, 90, or 180 days."
+        desc="Daily lead activity by source. Toggle the range to see 30, 90, or 180 days — the Channel Mix below matches it."
       >
-        <ChannelTimeline timeline={data.timeline} />
+        <ChannelTimeline
+          timeline={data.timeline}
+          range={channelRange}
+          onRangeChange={setChannelRange}
+        />
       </Section>
 
-      <Section title="Channel Mix" desc="Where leads came from, by volume, for the selected reporting period.">
-        <ChannelMixTable timeline={data.timeline} range={range} />
+      <Section
+        title="Channel Mix"
+        desc={`Where leads came from, by volume — matches the ${channelRange}-day range selected in the Channel Volume Timeline above.`}
+      >
+        <ChannelMixTable timeline={data.timeline} range={channelDateRange} />
       </Section>
 
       <Section
         title="Source / Medium Timeline"
-        desc="Daily lead volume by UTM source & medium. ⚠️ UTM tracking went live the week of June 15, 2026 — dates before then predate tagging, so earlier leads aren't attributed here."
+        desc="Daily lead volume by UTM source & medium — the UTM Source Breakdown below matches the range you pick here. ⚠️ UTM tracking went live the week of June 15, 2026 — dates before then predate tagging, so earlier leads aren't attributed."
       >
-        <SourceTimeline utmTimeline={data.utmTimeline} utmSeries={data.utmSeries} />
+        <SourceTimeline
+          utmTimeline={data.utmTimeline}
+          utmSeries={data.utmSeries}
+          range={sourceRange}
+          onRangeChange={setSourceRange}
+        />
       </Section>
 
       <Section
         title="UTM Source Breakdown"
-        desc="Attribution for the selected reporting period. ⚠️ UTM tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so periods reaching earlier than mid-June understate real attribution."
+        desc={`Attribution over the ${sourceRange}-day range selected in the Source / Medium Timeline above. ⚠️ UTM tracking went live the week of June 15, 2026 — leads before then weren't tagged and fall under (direct), so the 90- and 180-day ranges understate real attribution.`}
       >
-        <UTMBreakdown records={data.utmRecords} range={range} />
+        <UTMBreakdown records={data.utmRecords} range={sourceDateRange} />
       </Section>
 
       <Section

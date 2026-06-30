@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ComposedChart,
   Area,
@@ -30,12 +30,14 @@ function shortDate(iso: string): string {
 export default function SourceTimeline({
   utmTimeline,
   utmSeries,
+  range,
+  onRangeChange,
 }: {
   utmTimeline: UTMTimelinePoint[];
   utmSeries: UTMSeries[];
+  range: Range;
+  onRangeChange: (r: Range) => void;
 }) {
-  const [range, setRange] = useState<Range>(90);
-
   const colorFor = (key: string, i: number) =>
     key === 'Other' ? OTHER_COLOR : PALETTE[i % PALETTE.length];
 
@@ -67,7 +69,7 @@ export default function SourceTimeline({
         </div>
         <div className="toggle">
           {([30, 90, 180] as Range[]).map((r) => (
-            <button key={r} className={r === range ? 'active' : ''} onClick={() => setRange(r)}>
+            <button key={r} className={r === range ? 'active' : ''} onClick={() => onRangeChange(r)}>
               {r}d
             </button>
           ))}

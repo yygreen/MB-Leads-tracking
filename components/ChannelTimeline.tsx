@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import {
   ComposedChart,
   Area,
@@ -34,9 +34,15 @@ function shortDate(iso: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
-export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[] }) {
-  const [range, setRange] = useState<Range>(90);
-
+export default function ChannelTimeline({
+  timeline,
+  range,
+  onRangeChange,
+}: {
+  timeline: TimelinePoint[];
+  range: Range;
+  onRangeChange: (r: Range) => void;
+}) {
   const data = useMemo(
     () =>
       timeline.slice(-range).map((p) => ({
@@ -58,7 +64,7 @@ export default function ChannelTimeline({ timeline }: { timeline: TimelinePoint[
             <button
               key={r}
               className={r === range ? 'active' : ''}
-              onClick={() => setRange(r)}
+              onClick={() => onRangeChange(r)}
             >
               {r}d
             </button>
