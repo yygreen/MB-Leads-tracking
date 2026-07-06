@@ -127,7 +127,10 @@ function buildUTMRecords(
     UTM_DIST.forEach((d) => {
       const [source, medium] = d.combo.split(' / ');
       const n = (row[d.combo] as number) || 0;
-      for (let i = 0; i < n; i++) records.push({ date: row.date as string, source, medium });
+      // Sample channel split: organic/direct lean forms, the rest calls.
+      const channel = medium === 'organic' || source === '(direct)' ? 'forms' : 'callrail';
+      for (let i = 0; i < n; i++)
+        records.push({ date: row.date as string, source, medium, channel });
     });
   });
   return records;

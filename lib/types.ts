@@ -41,11 +41,14 @@ export interface UTMRow {
 }
 
 /** One lead's source/medium with its date — the raw rows the UTM breakdown
- *  filters by an arbitrary reporting period. */
+ *  filters by an arbitrary reporting period. `channel` (callrail/forms/leadtrap)
+ *  is carried for backend analysis only (e.g. splitting "(direct)" by channel);
+ *  it is not surfaced in the dashboard UI. */
 export interface UTMRecord {
   date: string;
   source: string;
   medium: string;
+  channel: string;
 }
 
 export interface FormRow {

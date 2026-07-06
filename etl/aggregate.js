@@ -80,7 +80,12 @@ export async function aggregate() {
   const recent = (ts) =>
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
   const utmRecords = [];
-  [...callrail, ...forms, ...leadtrap].forEach((r) => {
+  const taggedByChannel = [
+    ...callrail.map((r) => ['callrail', r]),
+    ...forms.map((r) => ['forms', r]),
+    ...leadtrap.map((r) => ['leadtrap', r]),
+  ];
+  taggedByChannel.forEach(([channel, r]) => {
     const ts = r.timestamp || r.submittedAt;
     if (!ts) return;
     const date = dayKey(ts);
@@ -89,6 +94,7 @@ export async function aggregate() {
       date,
       source: r.utm_source || '(direct)',
       medium: r.utm_medium || '(none)',
+      channel, // backend-only: lets us split "(direct)" by calls vs forms
     });
   });
   // utmSources keeps a 30-day breakdown for any legacy consumer.
