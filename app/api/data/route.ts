@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 // claims to be live until it really is. As env vars get added in Vercel, the
 // matching pill turns green on the next request. (Webflow Forms has no API key;
 // its webhook endpoint is deployed and live regardless.)
-function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
+function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0): SourceStatusRow[] {
   const has = (...keys: string[]) => keys.every((k) => Boolean(process.env[k]));
 
   const callrail = has('CALLRAIL_API_KEY', 'CALLRAIL_ACCOUNT_ID');
@@ -55,6 +55,14 @@ function liveSourceStatuses(leadtrapLeads = 0): SourceStatusRow[] {
         ? 'Webhook live · forward-only'
         : 'Webhook live · forward-only, awaiting leads',
     },
+    {
+      key: 'email',
+      label: 'Email',
+      status: emailLeads > 0 ? 'connected' : 'pending',
+      detail: emailLeads > 0
+        ? 'info@ inbox · forward-only'
+        : 'Endpoint live · awaiting inbox automation',
+    },
   ];
 }
 
@@ -88,7 +96,11 @@ export async function GET() {
     (a, p) => a + ((p as any).leadtrap || 0),
     0
   );
-  data.sources = liveSourceStatuses(leadtrapLeads);
+  const emailLeads = (data.timeline || []).reduce(
+    (a, p) => a + ((p as any).email || 0),
+    0
+  );
+  data.sources = liveSourceStatuses(leadtrapLeads, emailLeads);
 
   return NextResponse.json(data, {
     headers: {

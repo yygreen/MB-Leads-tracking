@@ -20,6 +20,7 @@ function emptyTimeline() {
       callrail: 0,
       forms: 0,
       leadtrap: 0,
+      email: 0,
       gbpCalls: 0,
       ga4Sessions: 0,
     });
@@ -36,13 +37,14 @@ function sumLast(timeline, key, days) {
 }
 
 export async function aggregate() {
-  const [callrail, forms, gbp, ga4, leadtrap] = await Promise.all([
+  const [callrail, forms, gbp, ga4, leadtrap, email] = await Promise.all([
     readJSON('callrail.json', []),
     readJSON('forms.json', []),
     readJSON('gbp.json', []),
     readJSON('ga4.json', []),
-    // Leadtrap is webhook-fed, stored one immutable blob per lead.
+    // Leadtrap and Email are webhook-fed, stored one immutable blob per lead.
     readCollection('leadtrap'),
+    readCollection('email'),
   ]);
 
   const timeline = emptyTimeline();
@@ -55,6 +57,7 @@ export async function aggregate() {
   callrail.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
+  email.forEach((e) => bump(dayKey(e.timestamp), 'email'));
   gbp.forEach((g) => bump(g.date, 'gbpCalls', g.calls || 0));
   ga4.forEach((s) => bump(s.date, 'ga4Sessions', s.sessions || 0));
 
@@ -62,14 +65,16 @@ export async function aggregate() {
   const callrail30 = sumLast(timeline, 'callrail', 30);
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
+  const email30 = sumLast(timeline, 'email', 30);
   const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
 
   const mixRaw = [
     { channel: 'CallRail', count: callrail30 },
     { channel: 'Forms', count: forms30 },
     { channel: 'GBP Calls', count: gbpCalls30 },
     { channel: 'Leadtrap', count: leadtrap30 },
+    { channel: 'Email', count: email30 },
   ];
   const mixTotal = mixRaw.reduce((a, c) => a + c.count, 0) || 1;
   const channelMix = mixRaw
@@ -84,6 +89,7 @@ export async function aggregate() {
     ...callrail.map((r) => ['callrail', r]),
     ...forms.map((r) => ['forms', r]),
     ...leadtrap.map((r) => ['leadtrap', r]),
+    ...email.map((r) => ['email', r]),
   ];
   taggedByChannel.forEach(([channel, r]) => {
     const ts = r.timestamp || r.submittedAt;
@@ -117,7 +123,7 @@ export async function aggregate() {
     `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
   const comboTotals = new Map();
   const comboByDate = new Map(); // date -> Map(combo -> count)
-  [...callrail, ...forms, ...leadtrap].forEach((r) => {
+  [...callrail, ...forms, ...leadtrap, ...email].forEach((r) => {
     const ts = r.timestamp || r.submittedAt;
     if (!ts) return;
     const date = dayKey(ts);
@@ -192,6 +198,7 @@ export async function aggregate() {
     { key: 'gbp', label: 'Google Business Profile', status: status(gbp, 'pending') },
     { key: 'ga4', label: 'GA4', status: status(ga4, 'no_data') },
     { key: 'leadtrap', label: 'Leadtrap', status: status(leadtrap, 'pending') },
+    { key: 'email', label: 'Email', status: status(email, 'pending') },
   ];
 
   return {

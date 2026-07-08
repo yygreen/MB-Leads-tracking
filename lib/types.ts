@@ -7,7 +7,8 @@ export type SourceKey =
   | 'forms'
   | 'gbp'
   | 'ga4'
-  | 'leadtrap';
+  | 'leadtrap'
+  | 'email';
 
 export type SourceStatus = 'connected' | 'no_data' | 'pending' | 'partial' | 'na';
 
@@ -17,6 +18,7 @@ export interface TimelinePoint {
   callrail: number;
   forms: number;
   leadtrap: number;
+  email: number;
   gbpCalls: number;
   ga4Sessions: number;
 }

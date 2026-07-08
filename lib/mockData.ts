@@ -62,6 +62,7 @@ function buildTimeline(): TimelinePoint[] {
       callrail: randIn(rng, 2, 8, s),
       forms: randIn(rng, 1, 4, s),
       leadtrap: rng() < 0.35 * s ? 1 : 0,
+      email: rng() < 0.25 * s ? 1 : 0,
       gbpCalls: randIn(rng, 1, 5, s),
       ga4Sessions: randIn(rng, 30, 150, s),
     });
@@ -85,6 +86,7 @@ function buildChannelMix(timeline: TimelinePoint[]): ChannelMixRow[] {
     { channel: 'Forms', key: 'forms' },
     { channel: 'GBP Calls', key: 'gbpCalls' },
     { channel: 'Leadtrap', key: 'leadtrap' },
+    { channel: 'Email', key: 'email' },
   ];
   const counts = channels.map((c) => ({
     channel: c.channel,
@@ -229,6 +231,7 @@ function buildSources(): SourceStatusRow[] {
     { key: 'gbp', label: 'Google Business Profile', status: 'partial', detail: '2 of 4 profiles managed' },
     { key: 'ga4', label: 'GA4', status: 'connected', detail: 'Data API' },
     { key: 'leadtrap', label: 'Leadtrap', status: 'pending', detail: 'API shape TBD' },
+    { key: 'email', label: 'Email', status: 'pending', detail: 'Inbox automation TBD' },
   ];
 }
 
@@ -238,8 +241,9 @@ export function getMockDashboard(): DashboardData {
   const callrail30 = sumLast(timeline, 'callrail', 30);
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
+  const email30 = sumLast(timeline, 'email', 30);
   const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
   const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
 
   return {

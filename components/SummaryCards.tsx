@@ -23,7 +23,8 @@ export default function SummaryCards({
     const forms = sum('forms');
     const gbp = sum('gbpCalls');
     const leadtrap = sum('leadtrap');
-    return { callrail, forms, gbp, leadtrap, total: callrail + forms + gbp + leadtrap };
+    const email = sum('email');
+    return { callrail, forms, gbp, leadtrap, email, total: callrail + forms + gbp + leadtrap + email };
   }, [timeline, range]);
 
   const cards = [
