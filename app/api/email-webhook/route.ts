@@ -7,9 +7,12 @@ export const runtime = 'nodejs';
 // Receiver for email leads sent to info@mastermindbehavior.com. A Zapier/Make
 // automation watches that inbox and POSTs each genuine inbound email here.
 //
-// PRIVACY: families email sensitive details (diagnosis, insurance). This is a
-// marketing-attribution dashboard, so we store ONLY who emailed and when —
-// sender name/email, subject, timestamp. The email BODY is never stored.
+// PRIVACY: this is a marketing-attribution dashboard that only ever displays
+// COUNTS — never who emailed. For a healthcare provider, the identity of a
+// sender (and any subject line) is effectively PHI, so we deliberately store
+// NOTHING identifying: only a timestamp and a one-way-hashed dedup key derived
+// from the Message-ID. Sender name/email/subject and the body are used at
+// request time (for the internal-sender filter and dedup) but never persisted.
 //
 // SECURITY: set EMAIL_WEBHOOK_SECRET in the environment and have the Zap send
 // it as the `x-webhook-secret` header; requests without it are rejected. If the
@@ -52,10 +55,9 @@ export async function POST(req: Request) {
     new Date().toISOString();
   const fromRaw = field(b, 'from', 'From', 'sender', 'fromEmail', 'from_email');
   const email = parseEmail(field(b, 'email', 'fromEmail', 'from_email') || fromRaw);
-  const name = field(b, 'name', 'fromName', 'from_name', 'senderName') || null;
-  const subject = field(b, 'subject', 'Subject') || null;
 
   // Must have a sender address, and drop internal/self mail (staff replies).
+  // (email is used here only, at request time — it is never stored.)
   if (!email) {
     return NextResponse.json({ ok: false, error: 'no sender email' }, { status: 400 });
   }
@@ -63,28 +65,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, skipped: 'internal sender' });
   }
 
-  // Dedup on the email's Message-ID when available, else sender + time.
-  const id =
+  // Dedup key: Message-ID when available, else sender + time. This is only
+  // passed to appendRecord, which one-way-hashes it into the blob's filename —
+  // it is not stored in the record body, so no address is persisted.
+  const dedupKey =
     field(b, 'messageId', 'message_id', 'id', 'internetMessageId') ||
     `${timestamp}|${email}`;
 
-  const record = {
-    source: 'email',
-    id: String(id),
-    timestamp,
-    name,
-    email,
-    subject, // header only — body is intentionally never stored
-  };
+  // Stored record: timestamp only. Nothing identifying.
+  const record = { source: 'email', timestamp };
 
   try {
-    await appendRecord('email', record.id, record);
+    await appendRecord('email', String(dedupKey), record);
   } catch (err) {
     console.error('[api/email-webhook] write failed:', err);
     return NextResponse.json({ ok: false, error: 'storage error' }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true, id: record.id });
+  return NextResponse.json({ ok: true });
 }
 
 export async function GET() {
