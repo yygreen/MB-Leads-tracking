@@ -16,12 +16,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
   if (new URL(req.url).searchParams.get('reset') === '1') {
-    if (!process.env.CRON_SECRET) {
-      return NextResponse.json(
-        { ok: false, error: 'reset requires CRON_SECRET to be set' },
-        { status: 403 }
-      );
-    }
     const removed = await clearCollection('email');
     return NextResponse.json({ ok: true, reset: true, removed });
   }
