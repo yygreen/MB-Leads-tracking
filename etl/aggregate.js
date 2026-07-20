@@ -4,6 +4,7 @@
 // transparently falls back to mock so previews still look complete.
 // Standalone: `node etl/aggregate.js`
 import { readJSON, writeJSON, readCollection } from './_lib.js';
+import { qualifyCalls } from './callrail.js';
 import { isMain } from './_run.js';
 
 const DAYS = 180;
@@ -18,6 +19,8 @@ function emptyTimeline() {
     points.push({
       date: d.toISOString().slice(0, 10),
       callrail: 0,
+      callrailAll: 0,
+      callrailFirst: 0,
       forms: 0,
       leadtrap: 0,
       email: 0,
@@ -54,7 +57,17 @@ export async function aggregate() {
     if (p) p[key] += n;
   };
 
-  callrail.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
+  // Phone funnel: every call -> first-time callers -> qualified leads.
+  // `callrail` (the lead count used in totals/mix/UTM) is now QUALIFIED calls:
+  // inbound + answered + first-time + past the IVR-adjusted duration bar,
+  // deduped by caller number. See etl/callrail.js for the config.
+  const qualifiedCalls = qualifyCalls(callrail);
+  callrail.forEach((c) => {
+    if (c.direction && c.direction !== 'inbound') return;
+    bump(dayKey(c.timestamp), 'callrailAll');
+    if (c.first_call !== false) bump(dayKey(c.timestamp), 'callrailFirst');
+  });
+  qualifiedCalls.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
   email.forEach((e) => bump(dayKey(e.timestamp), 'email'));
@@ -86,7 +99,7 @@ export async function aggregate() {
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
   const utmRecords = [];
   const taggedByChannel = [
-    ...callrail.map((r) => ['callrail', r]),
+    ...qualifiedCalls.map((r) => ['callrail', r]),
     ...forms.map((r) => ['forms', r]),
     ...leadtrap.map((r) => ['leadtrap', r]),
     ...email.map((r) => ['email', r]),
@@ -123,7 +136,7 @@ export async function aggregate() {
     `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
   const comboTotals = new Map();
   const comboByDate = new Map(); // date -> Map(combo -> count)
-  [...callrail, ...forms, ...leadtrap, ...email].forEach((r) => {
+  [...qualifiedCalls, ...forms, ...leadtrap, ...email].forEach((r) => {
     const ts = r.timestamp || r.submittedAt;
     if (!ts) return;
     const date = dayKey(ts);

@@ -57,9 +57,13 @@ function buildTimeline(): TimelinePoint[] {
     d.setUTCDate(today.getUTCDate() - i);
     const s = seasonality(d.getUTCDay());
 
+    const qualified = randIn(rng, 2, 8, s);
+    const firstTime = qualified + randIn(rng, 0, 3, s);
     points.push({
       date: isoDate(d),
-      callrail: randIn(rng, 2, 8, s),
+      callrail: qualified,
+      callrailAll: firstTime + randIn(rng, 1, 4, s),
+      callrailFirst: firstTime,
       forms: randIn(rng, 1, 4, s),
       leadtrap: rng() < 0.35 * s ? 1 : 0,
       email: rng() < 0.25 * s ? 1 : 0,

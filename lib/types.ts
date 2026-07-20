@@ -15,7 +15,13 @@ export type SourceStatus = 'connected' | 'no_data' | 'pending' | 'partial' | 'na
 export interface TimelinePoint {
   /** ISO date, YYYY-MM-DD */
   date: string;
+  /** QUALIFIED phone leads (inbound + answered + first-time + past the
+   *  IVR-adjusted duration bar, deduped by caller) — the lead count. */
   callrail: number;
+  /** every inbound call, unfiltered (phone-funnel top) */
+  callrailAll: number;
+  /** inbound first-time callers (phone-funnel middle) */
+  callrailFirst: number;
   forms: number;
   leadtrap: number;
   email: number;
