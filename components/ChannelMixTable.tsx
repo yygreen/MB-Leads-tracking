@@ -10,6 +10,7 @@ const CHANNELS: Array<{ channel: string; key: keyof TimelinePoint }> = [
   { channel: 'Forms', key: 'forms' },
   { channel: 'GBP Calls', key: 'gbpCalls' },
   { channel: 'Leadtrap', key: 'leadtrap' },
+  { channel: 'Email', key: 'email' },
 ];
 
 export default function ChannelMixTable({
