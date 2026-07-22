@@ -15,11 +15,19 @@ export type SourceStatus = 'connected' | 'no_data' | 'pending' | 'partial' | 'na
 export interface TimelinePoint {
   /** ISO date, YYYY-MM-DD */
   date: string;
+  /** QUALIFIED phone leads (inbound + answered + first-time + past the
+   *  IVR-adjusted duration bar, deduped by caller) — the lead count. */
   callrail: number;
+  /** every inbound call, unfiltered (phone-funnel top) */
+  callrailAll: number;
+  /** inbound first-time callers (phone-funnel middle) */
+  callrailFirst: number;
   forms: number;
   leadtrap: number;
   email: number;
-  gbpCalls: number;
+  /** GBP profile calls (CALL_CLICKS) — GBP's intent signal. GBP has no summed
+   *  "leads" figure; web clicks/directions/impressions are engagement/visibility. */
+  gbp: number;
   ga4Sessions: number;
 }
 
@@ -27,7 +35,7 @@ export interface SummaryCards {
   totalLeads30d: number;
   callrailCalls30d: number;
   formSubmissions30d: number;
-  gbpDirectCalls30d: number;
+  gbpCalls30d: number;
 }
 
 export interface ChannelMixRow {
@@ -62,10 +70,24 @@ export interface GBPLocationRow {
   name: string;
   status: 'active' | 'pending';
   note?: string;
+  state?: string | null;
+  location_id?: string;
+  /** CALL_CLICKS — the GBP intent signal */
   calls: number | null;
-  directions: number | null;
   websiteClicks: number | null;
+  directions: number | null;
   impressions: number | null;
+}
+
+/** GBP rolled up per state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins).
+ *  Components only — GBP has no summed "leads" figure; calls is the intent signal. */
+export interface GBPStateRow {
+  state: string;
+  locations: number;
+  calls: number;
+  websiteClicks: number;
+  directions: number;
+  impressions: number;
 }
 
 export interface SourceStatusRow {
@@ -101,6 +123,7 @@ export interface DashboardData {
   utmSeries: UTMSeries[];
   forms: FormRow[];
   gbpLocations: GBPLocationRow[];
+  gbpStates: GBPStateRow[];
   sources: SourceStatusRow[];
   /** true when served from mock fallback rather than real blob data */
   isMock?: boolean;

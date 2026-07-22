@@ -13,6 +13,7 @@ import SourceTimeline from '@/components/SourceTimeline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
 import GBPLocations from '@/components/GBPLocations';
+import GBPStates from '@/components/GBPStates';
 import SourcesStatus from '@/components/SourcesStatus';
 
 function Section({
@@ -219,10 +220,19 @@ export default function Page() {
       </Section>
 
       <Section
-        title="GBP Per-Location"
-        desc="🚧 Under construction — awaiting Google Business Profile API access. Showing placeholder locations until OAuth is approved; live performance data will backfill once connected."
+        title="Google Business Profile"
+        desc="Performance across the four managed profiles — rolled up by state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins) and broken out per location. Calls (tap-to-call) is the closest-to-a-lead GBP signal; website clicks and directions are engagement, impressions are visibility — none are counted as leads."
       >
-        <GBPLocations rows={data.gbpLocations} />
+        {data.gbpStates.length > 0 && (
+          <div className="subsection" style={{ marginTop: 0 }}>
+            <div className="subsection-label">By state · last 30 days</div>
+            <GBPStates rows={data.gbpStates} />
+          </div>
+        )}
+        <div className="subsection">
+          <div className="subsection-label">By location · last 30 days</div>
+          <GBPLocations rows={data.gbpLocations} />
+        </div>
       </Section>
 
       <Section

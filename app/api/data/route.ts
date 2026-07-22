@@ -11,11 +11,13 @@ export const runtime = 'nodejs';
 // claims to be live until it really is. As env vars get added in Vercel, the
 // matching pill turns green on the next request. (Webflow Forms has no API key;
 // its webhook endpoint is deployed and live regardless.)
-function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0): SourceStatusRow[] {
+function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpCalls = 0): SourceStatusRow[] {
   const has = (...keys: string[]) => keys.every((k) => Boolean(process.env[k]));
 
   const callrail = has('CALLRAIL_API_KEY', 'CALLRAIL_ACCOUNT_ID');
-  const gbp = has('GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN', 'GBP_LOCATION_IDS');
+  // Location IDs are discovered at runtime, so GBP_LOCATION_IDS is intentionally
+  // not required — OAuth creds are what gate the connection.
+  const gbpCreds = has('GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN');
   const ga4 = has('GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_JSON');
 
   return [
@@ -34,10 +36,13 @@ function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0): SourceStatusRow[
     {
       key: 'gbp',
       label: 'Google Business Profile',
-      status: gbp ? 'connected' : 'pending',
-      detail: gbp
-        ? 'Performance API · backfills ~6mo history'
-        : 'awaiting OAuth (backfills history)',
+      status: gbpCalls > 0 ? 'connected' : gbpCreds ? 'partial' : 'pending',
+      detail:
+        gbpCalls > 0
+          ? 'Performance API · 4 profiles (NJ + GA)'
+          : gbpCreds
+            ? 'OAuth live · awaiting backfill'
+            : 'awaiting OAuth (backfills history)',
     },
     {
       key: 'ga4',
@@ -89,6 +94,8 @@ export async function GET() {
   // next aggregate run repopulates it (the breakdown then shows no rows rather
   // than wrong ones).
   data.utmRecords = data.utmRecords || [];
+  // Older dashboard.json predates the GBP per-state rollup.
+  data.gbpStates = data.gbpStates || [];
 
   // Always reflect the real credential state in the status row, regardless of
   // whether the rest of the payload is live or sample data.
@@ -100,7 +107,11 @@ export async function GET() {
     (a, p) => a + ((p as any).email || 0),
     0
   );
-  data.sources = liveSourceStatuses(leadtrapLeads, emailLeads);
+  const gbpCalls = (data.timeline || []).reduce(
+    (a, p) => a + ((p as any).gbp || 0),
+    0
+  );
+  data.sources = liveSourceStatuses(leadtrapLeads, emailLeads, gbpCalls);
 
   return NextResponse.json(data, {
     headers: {

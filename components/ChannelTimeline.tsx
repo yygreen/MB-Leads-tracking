@@ -24,7 +24,7 @@ import { inRange } from '@/lib/dateRange';
 const SERIES: Array<{ key: keyof TimelinePoint; name: string; color: string }> = [
   { key: 'callrail', name: 'CallRail', color: '#34abc7' },
   { key: 'forms', name: 'Forms', color: '#1a2744' },
-  { key: 'gbpCalls', name: 'GBP Calls', color: '#e8734a' },
+  { key: 'gbp', name: 'GBP Calls', color: '#e8734a' },
   { key: 'leadtrap', name: 'Leadtrap', color: '#c8b893' },
   { key: 'email', name: 'Email', color: '#5f9e77' },
   // GA4 sessions are website traffic (30–150/day), not leads — including them
