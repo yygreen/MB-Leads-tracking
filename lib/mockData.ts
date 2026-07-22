@@ -68,7 +68,7 @@ function buildTimeline(): TimelinePoint[] {
       forms: randIn(rng, 1, 4, s),
       leadtrap: rng() < 0.35 * s ? 1 : 0,
       email: rng() < 0.25 * s ? 1 : 0,
-      gbp: randIn(rng, 2, 8, s),
+      gbp: randIn(rng, 1, 5, s),
       ga4Sessions: randIn(rng, 30, 150, s),
     });
   }
@@ -89,7 +89,7 @@ function buildChannelMix(timeline: TimelinePoint[]): ChannelMixRow[] {
   const channels: Array<{ channel: string; key: keyof TimelinePoint }> = [
     { channel: 'CallRail', key: 'callrail' },
     { channel: 'Forms', key: 'forms' },
-    { channel: 'GBP', key: 'gbp' },
+    { channel: 'GBP Calls', key: 'gbp' },
     { channel: 'Leadtrap', key: 'leadtrap' },
     { channel: 'Email', key: 'email' },
   ];
@@ -188,19 +188,16 @@ function buildForms(formTotal30d: number): FormRow[] {
 }
 
 // Sample per-location figures for the four managed profiles (all now in the
-// "Mastermind Behavior All Locations" group). leads = calls + website clicks.
-const MOCK_GBP: Array<Omit<GBPLocationRow, 'leads'>> = [
-  { name: 'Lakewood, NJ', state: 'NJ', status: 'active', calls: 15, directions: 40, websiteClicks: 61, impressions: 1684 },
-  { name: 'Hackensack, NJ', state: 'NJ', status: 'active', calls: 3, directions: 42, websiteClicks: 4, impressions: 196 },
-  { name: 'Macon, GA', state: 'GA', status: 'active', calls: 14, directions: 61, websiteClicks: 13, impressions: 472 },
-  { name: 'Warner Robins, GA', state: 'GA', status: 'active', calls: 17, directions: 44, websiteClicks: 18, impressions: 182 },
+// "Mastermind Behavior All Locations" group). Components only — no summed leads.
+const MOCK_GBP: GBPLocationRow[] = [
+  { name: 'Lakewood, NJ', state: 'NJ', status: 'active', calls: 15, websiteClicks: 61, directions: 40, impressions: 1684 },
+  { name: 'Hackensack, NJ', state: 'NJ', status: 'active', calls: 3, websiteClicks: 4, directions: 42, impressions: 196 },
+  { name: 'Macon, GA', state: 'GA', status: 'active', calls: 14, websiteClicks: 13, directions: 61, impressions: 472 },
+  { name: 'Warner Robins, GA', state: 'GA', status: 'active', calls: 17, websiteClicks: 18, directions: 44, impressions: 182 },
 ];
 
 function buildGBPLocations(): GBPLocationRow[] {
-  return MOCK_GBP.map((l) => ({
-    ...l,
-    leads: (l.calls || 0) + (l.websiteClicks || 0),
-  })).sort((a, b) => (b.leads || 0) - (a.leads || 0));
+  return [...MOCK_GBP].sort((a, b) => (b.calls || 0) - (a.calls || 0));
 }
 
 function buildGBPStates(): GBPStateRow[] {
@@ -209,16 +206,15 @@ function buildGBPStates(): GBPStateRow[] {
     const st = l.state || 'Unknown';
     const cur =
       map.get(st) ||
-      { state: st, locations: 0, leads: 0, calls: 0, directions: 0, websiteClicks: 0, impressions: 0 };
+      { state: st, locations: 0, calls: 0, websiteClicks: 0, directions: 0, impressions: 0 };
     cur.locations += 1;
     cur.calls += l.calls || 0;
-    cur.directions += l.directions || 0;
     cur.websiteClicks += l.websiteClicks || 0;
+    cur.directions += l.directions || 0;
     cur.impressions += l.impressions || 0;
-    cur.leads += (l.calls || 0) + (l.websiteClicks || 0);
     map.set(st, cur);
   });
-  return [...map.values()].sort((a, b) => b.leads - a.leads);
+  return [...map.values()].sort((a, b) => b.calls - a.calls);
 }
 
 function buildSources(): SourceStatusRow[] {
@@ -239,8 +235,8 @@ export function getMockDashboard(): DashboardData {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
-  const gbp30 = sumLast(timeline, 'gbp', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbp30;
+  const gbpCalls30 = sumLast(timeline, 'gbp', 30);
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
   const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
 
   return {
@@ -249,7 +245,7 @@ export function getMockDashboard(): DashboardData {
       totalLeads30d,
       callrailCalls30d: callrail30,
       formSubmissions30d: forms30,
-      gbpLeads30d: gbp30,
+      gbpCalls30d: gbpCalls30,
     },
     timeline,
     channelMix: buildChannelMix(timeline),

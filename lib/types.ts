@@ -25,8 +25,8 @@ export interface TimelinePoint {
   forms: number;
   leadtrap: number;
   email: number;
-  /** GBP leads = CALL_CLICKS + WEBSITE_CLICKS across the 4 managed profiles
-   *  (directions/impressions are visibility, not leads). */
+  /** GBP profile calls (CALL_CLICKS) — GBP's intent signal. GBP has no summed
+   *  "leads" figure; web clicks/directions/impressions are engagement/visibility. */
   gbp: number;
   ga4Sessions: number;
 }
@@ -35,7 +35,7 @@ export interface SummaryCards {
   totalLeads30d: number;
   callrailCalls30d: number;
   formSubmissions30d: number;
-  gbpLeads30d: number;
+  gbpCalls30d: number;
 }
 
 export interface ChannelMixRow {
@@ -72,23 +72,21 @@ export interface GBPLocationRow {
   note?: string;
   state?: string | null;
   location_id?: string;
-  /** leads = calls + website clicks */
-  leads?: number | null;
+  /** CALL_CLICKS — the GBP intent signal */
   calls: number | null;
-  directions: number | null;
   websiteClicks: number | null;
+  directions: number | null;
   impressions: number | null;
 }
 
-/** GBP rolled up per state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins). */
+/** GBP rolled up per state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins).
+ *  Components only — GBP has no summed "leads" figure; calls is the intent signal. */
 export interface GBPStateRow {
   state: string;
   locations: number;
-  /** leads = calls + website clicks */
-  leads: number;
   calls: number;
-  directions: number;
   websiteClicks: number;
+  directions: number;
   impressions: number;
 }
 

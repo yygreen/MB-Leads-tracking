@@ -5,7 +5,7 @@
 // Standalone: `node etl/aggregate.js`
 import { readJSON, writeJSON, readCollection } from './_lib.js';
 import { qualifyCalls } from './callrail.js';
-import { ALLOWED_LOCATION_IDS, leadCount } from './gbp.js';
+import { ALLOWED_LOCATION_IDS } from './gbp.js';
 import { isMain } from './_run.js';
 
 const GBP_ALLOWED = new Set(ALLOWED_LOCATION_IDS);
@@ -74,10 +74,11 @@ export async function aggregate() {
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
   email.forEach((e) => bump(dayKey(e.timestamp), 'email'));
-  // GBP: only the four allowlisted profiles; a GBP lead = calls + website clicks
-  // (directions/impressions are visibility, not leads — see etl/gbp.js).
+  // GBP: only the four allowlisted profiles. GBP's single intent signal is
+  // CALL_CLICKS (tap-to-call); website clicks/directions/impressions are
+  // engagement/visibility, never counted as leads (see etl/gbp.js).
   const gbpRows = gbp.filter((g) => GBP_ALLOWED.has(g.location_id));
-  gbpRows.forEach((g) => bump(g.date, 'gbp', leadCount(g)));
+  gbpRows.forEach((g) => bump(g.date, 'gbp', g.calls || 0));
   ga4.forEach((s) => bump(s.date, 'ga4Sessions', s.sessions || 0));
 
   // --- summary + channel mix ---
@@ -85,13 +86,14 @@ export async function aggregate() {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
-  const gbp30 = sumLast(timeline, 'gbp', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbp30;
+  // gbp30 is GBP profile CALLS (calls only) — the intent signal, not a summed lead.
+  const gbpCalls30 = sumLast(timeline, 'gbp', 30);
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
 
   const mixRaw = [
     { channel: 'CallRail', count: callrail30 },
     { channel: 'Forms', count: forms30 },
-    { channel: 'GBP', count: gbp30 },
+    { channel: 'GBP Calls', count: gbpCalls30 },
     { channel: 'Leadtrap', count: leadtrap30 },
     { channel: 'Email', count: email30 },
   ];
@@ -189,7 +191,8 @@ export async function aggregate() {
     .sort((a, b) => b.count - a.count);
 
   // --- GBP per-location + per-state (last 30 days, summed, allowlist only) ---
-  // leads = calls + website clicks; directions/impressions kept as visibility.
+  // Components only — no summed "leads" figure. Calls (tap-to-call) is the intent
+  // signal; website clicks/directions/impressions are engagement/visibility.
   const recentGbp = gbpRows.filter((g) => g.date && recent(`${g.date}T00:00:00Z`));
   const locMap = new Map();
   const stateMap = new Map();
@@ -200,16 +203,14 @@ export async function aggregate() {
       state: g.state || null,
       location_id: g.location_id,
       status: 'active',
-      leads: 0,
       calls: 0,
-      directions: 0,
       websiteClicks: 0,
+      directions: 0,
       impressions: 0,
     };
-    loc.leads += leadCount(g);
     loc.calls += g.calls || 0;
-    loc.directions += g.directions || 0;
     loc.websiteClicks += g.websiteClicks || 0;
+    loc.directions += g.directions || 0;
     loc.impressions += g.impressions || 0;
     locMap.set(cityName, loc);
 
@@ -217,24 +218,22 @@ export async function aggregate() {
     const state = stateMap.get(st) || {
       state: st,
       locations: new Set(),
-      leads: 0,
       calls: 0,
-      directions: 0,
       websiteClicks: 0,
+      directions: 0,
       impressions: 0,
     };
     state.locations.add(g.location_id);
-    state.leads += leadCount(g);
     state.calls += g.calls || 0;
-    state.directions += g.directions || 0;
     state.websiteClicks += g.websiteClicks || 0;
+    state.directions += g.directions || 0;
     state.impressions += g.impressions || 0;
     stateMap.set(st, state);
   });
-  const gbpLocations = [...locMap.values()].sort((a, b) => b.leads - a.leads);
+  const gbpLocations = [...locMap.values()].sort((a, b) => b.calls - a.calls);
   const gbpStates = [...stateMap.values()]
     .map((s) => ({ ...s, locations: s.locations.size }))
-    .sort((a, b) => b.leads - a.leads);
+    .sort((a, b) => b.calls - a.calls);
 
   // --- source status ---
   const status = (arr, pendingLabel) =>
@@ -254,7 +253,7 @@ export async function aggregate() {
       totalLeads30d,
       callrailCalls30d: callrail30,
       formSubmissions30d: forms30,
-      gbpLeads30d: gbp30,
+      gbpCalls30d: gbpCalls30,
     },
     timeline,
     channelMix,

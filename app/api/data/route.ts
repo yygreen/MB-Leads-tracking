@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 // claims to be live until it really is. As env vars get added in Vercel, the
 // matching pill turns green on the next request. (Webflow Forms has no API key;
 // its webhook endpoint is deployed and live regardless.)
-function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpLeads = 0): SourceStatusRow[] {
+function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpCalls = 0): SourceStatusRow[] {
   const has = (...keys: string[]) => keys.every((k) => Boolean(process.env[k]));
 
   const callrail = has('CALLRAIL_API_KEY', 'CALLRAIL_ACCOUNT_ID');
@@ -36,9 +36,9 @@ function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpLeads = 0): So
     {
       key: 'gbp',
       label: 'Google Business Profile',
-      status: gbpLeads > 0 ? 'connected' : gbpCreds ? 'partial' : 'pending',
+      status: gbpCalls > 0 ? 'connected' : gbpCreds ? 'partial' : 'pending',
       detail:
-        gbpLeads > 0
+        gbpCalls > 0
           ? 'Performance API · 4 profiles (NJ + GA)'
           : gbpCreds
             ? 'OAuth live · awaiting backfill'
@@ -107,11 +107,11 @@ export async function GET() {
     (a, p) => a + ((p as any).email || 0),
     0
   );
-  const gbpLeads = (data.timeline || []).reduce(
+  const gbpCalls = (data.timeline || []).reduce(
     (a, p) => a + ((p as any).gbp || 0),
     0
   );
-  data.sources = liveSourceStatuses(leadtrapLeads, emailLeads, gbpLeads);
+  data.sources = liveSourceStatuses(leadtrapLeads, emailLeads, gbpCalls);
 
   return NextResponse.json(data, {
     headers: {

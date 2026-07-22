@@ -11,7 +11,6 @@ export default function GBPLocations({ rows }: { rows: GBPLocationRow[] }) {
         <thead>
           <tr>
             <th>Location</th>
-            <th className="num">Leads</th>
             <th className="num">Calls</th>
             <th className="num">Website clicks</th>
             <th className="num">Directions</th>
@@ -28,15 +27,14 @@ export default function GBPLocations({ rows }: { rows: GBPLocationRow[] }) {
                 )}
               </td>
               {r.status === 'pending' ? (
-                <td colSpan={5} className="muted" style={{ textAlign: 'center' }}>
+                <td colSpan={4} className="muted" style={{ textAlign: 'center' }}>
                   No access yet
                 </td>
               ) : (
                 <>
                   <td className="num" style={{ fontWeight: 600, color: 'var(--navy)' }}>
-                    {cell(r.leads ?? null)}
+                    {cell(r.calls)}
                   </td>
-                  <td className="num">{cell(r.calls)}</td>
                   <td className="num">{cell(r.websiteClicks)}</td>
                   <td className="num">{cell(r.directions)}</td>
                   <td className="num">{cell(r.impressions)}</td>
@@ -47,7 +45,8 @@ export default function GBPLocations({ rows }: { rows: GBPLocationRow[] }) {
         </tbody>
       </table>
       <div className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-        Leads = calls + website clicks. Directions &amp; impressions are visibility, not leads.
+        Calls (tap-to-call) is the closest-to-a-lead GBP signal. Website clicks &amp; directions
+        are engagement; impressions are visibility — none are counted as leads.
       </div>
     </div>
   );

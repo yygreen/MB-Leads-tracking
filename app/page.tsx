@@ -221,7 +221,7 @@ export default function Page() {
 
       <Section
         title="Google Business Profile"
-        desc="Performance across the four managed profiles — rolled up by state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins) and broken out per location. A GBP lead = profile calls + website clicks; directions and impressions are visibility, not leads."
+        desc="Performance across the four managed profiles — rolled up by state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins) and broken out per location. Calls (tap-to-call) is the closest-to-a-lead GBP signal; website clicks and directions are engagement, impressions are visibility — none are counted as leads."
       >
         {data.gbpStates.length > 0 && (
           <div className="subsection" style={{ marginTop: 0 }}>

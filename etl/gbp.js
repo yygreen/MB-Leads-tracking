@@ -31,17 +31,19 @@ const KNOWN_LOCATIONS = [
 export const ALLOWED_LOCATION_IDS = KNOWN_LOCATIONS.map((k) => k.location_id);
 const ALLOWED_SET = new Set(ALLOWED_LOCATION_IDS);
 
-// LEAD SIGNAL (locked with the client): a GBP lead = CALL_CLICKS + WEBSITE_CLICKS.
-// Direction requests are engagement/visibility, impressions are visibility, and
-// BUSINESS_CONVERSATIONS is off (all-zero) on these profiles — none count as leads.
-export function leadCount(rec) {
-  return (Number(rec?.calls) || 0) + (Number(rec?.websiteClicks) || 0);
+// GBP SIGNALS (locked with the client): GBP does NOT produce a summed "leads"
+// figure — the word "lead" is reserved for the CallRail qualified-call channel.
+// GBP surfaces its components. The single intent signal, where one is needed, is
+// CALL_CLICKS (tap-to-call = trying to reach the business). Website clicks and
+// direction requests are engagement; impressions are visibility — none are leads.
+export function callSignal(rec) {
+  return Number(rec?.calls) || 0;
 }
 
 const LEAD_METRICS = [
-  'CALL_CLICKS',
-  'WEBSITE_CLICKS',
-  'BUSINESS_DIRECTION_REQUESTS', // engagement (directions) — pulled, NOT a lead
+  'CALL_CLICKS', // tap-to-call — the GBP intent signal
+  'WEBSITE_CLICKS', // engagement — NOT a lead
+  'BUSINESS_DIRECTION_REQUESTS', // engagement (directions) — NOT a lead
   'BUSINESS_CONVERSATIONS', // off on these profiles — pulled for completeness only
 ];
 const VISIBILITY_METRICS = [

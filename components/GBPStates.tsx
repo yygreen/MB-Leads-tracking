@@ -10,7 +10,7 @@ function n(v: number): string {
 }
 
 // GBP rolled up per state: NJ = Lakewood + Hackensack, GA = Macon + Warner Robins.
-// leads = calls + website clicks (directions/impressions are visibility, not leads).
+// Components only — no summed "leads"; calls (tap-to-call) is the intent signal.
 export default function GBPStates({ rows }: { rows: GBPStateRow[] }) {
   if (!rows.length) return null;
   return (
@@ -20,7 +20,6 @@ export default function GBPStates({ rows }: { rows: GBPStateRow[] }) {
           <tr>
             <th>State</th>
             <th className="num">Profiles</th>
-            <th className="num">Leads</th>
             <th className="num">Calls</th>
             <th className="num">Website clicks</th>
             <th className="num">Directions</th>
@@ -35,9 +34,8 @@ export default function GBPStates({ rows }: { rows: GBPStateRow[] }) {
               </td>
               <td className="num">{n(r.locations)}</td>
               <td className="num" style={{ fontWeight: 600, color: 'var(--navy)' }}>
-                {n(r.leads)}
+                {n(r.calls)}
               </td>
-              <td className="num">{n(r.calls)}</td>
               <td className="num">{n(r.websiteClicks)}</td>
               <td className="num">{n(r.directions)}</td>
               <td className="num">{n(r.impressions)}</td>

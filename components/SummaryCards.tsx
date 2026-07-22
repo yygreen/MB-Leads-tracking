@@ -41,7 +41,7 @@ export default function SummaryCards({
   const totalCard = { label: 'Total Leads', value: totals.total, foot: 'All channels combined' };
   const cards = [
     { label: 'Form Submissions', value: totals.forms, foot: 'Webflow forms' },
-    { label: 'GBP Leads', value: totals.gbp, foot: 'Calls + website clicks' },
+    { label: 'GBP Calls', value: totals.gbp, foot: 'Google profile tap-to-call' },
   ];
 
   // Phone leads as a funnel: every call -> first-time callers -> qualified.

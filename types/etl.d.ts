@@ -14,10 +14,7 @@ declare module '@/etl/callrail.js' {
 declare module '@/etl/gbp.js' {
   export function pull(): Promise<any[]>;
   export const ALLOWED_LOCATION_IDS: string[];
-  export function leadCount(rec: {
-    calls?: number;
-    websiteClicks?: number;
-  }): number;
+  export function callSignal(rec: { calls?: number }): number;
   export function partitionLocations<T extends { location_id: string }>(
     locations: T[]
   ): { allowed: T[]; stray: T[] };

@@ -6,7 +6,6 @@ import {
   partitionLocations,
   fetchLocationMetrics,
   metricsWindow,
-  leadCount,
 } from '@/etl/gbp.js';
 import { readJSON, writeJSON } from '@/etl/_lib.js';
 
@@ -83,7 +82,6 @@ export async function GET(req: Request) {
 
     const monthOf = (d: string) => d.slice(0, 7);
     const blank = () => ({
-      leads: 0,
       calls: 0,
       websiteClicks: 0,
       directions: 0,
@@ -96,13 +94,10 @@ export async function GET(req: Request) {
       const st = r.state || 'Unknown';
       const key = `${st}|${m}`;
       stateMap[key] ??= { month: m, state: st, ...blank() };
-      const lead = leadCount(r);
-      stateMap[key].leads += lead;
       stateMap[key].calls += r.calls || 0;
       stateMap[key].websiteClicks += r.websiteClicks || 0;
       stateMap[key].directions += r.directions || 0;
       stateMap[key].impressions += r.impressions || 0;
-      grand.leads += lead;
       grand.calls += r.calls || 0;
       grand.websiteClicks += r.websiteClicks || 0;
       grand.directions += r.directions || 0;
@@ -126,7 +121,8 @@ export async function GET(req: Request) {
         })),
       },
       perLocationRecordCounts: perLocationCounts,
-      leadDefinition: 'leads = CALL_CLICKS + WEBSITE_CLICKS (directions/impressions = visibility, not leads)',
+      signalDefinition:
+        'GBP intent signal = CALL_CLICKS (calls). Website clicks/directions are engagement, impressions are visibility — none counted as leads.',
       grandTotals: grand,
       perStateMonthly,
     });
