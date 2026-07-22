@@ -8,7 +8,6 @@ import { inRange } from '@/lib/dateRange';
 const CHANNELS: Array<{ channel: string; key: keyof TimelinePoint }> = [
   { channel: 'CallRail', key: 'callrail' },
   { channel: 'Forms', key: 'forms' },
-  { channel: 'GBP Calls', key: 'gbp' },
   { channel: 'Leadtrap', key: 'leadtrap' },
   { channel: 'Email', key: 'email' },
 ];
