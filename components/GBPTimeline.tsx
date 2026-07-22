@@ -66,50 +66,56 @@ export default function GBPTimeline({
   records: DailyRecord[];
   range: DateRange;
 }) {
-  const { data, series, mode } = useMemo(() => {
+  const { data, series, mode, hasCalls } = useMemo(() => {
+    const nameOf = (r: DailyRecord) => `${r.city}${r.state ? `, ${r.state}` : ''}`;
+
+    // Stable colour + order per location, derived from the FULL dataset (not the
+    // selected range) so a location keeps the same colour/position when you
+    // switch 30 ↔ 90 ↔ 180 days.
+    const allTotals = new Map<string, number>();
+    for (const r of records) allTotals.set(nameOf(r), (allTotals.get(nameOf(r)) || 0) + r.calls);
+    const stable = [...allTotals.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([name], i) => ({ name, color: PALETTE[i % PALETTE.length], gid: `gbp-${i}` }));
+
+    // Adaptive granularity: daily for short ranges, weekly, then monthly.
     const rows = records.filter((r) => inRange(r.date, range));
-    // Daily, to match the other timelines (source/medium, channels).
-    const m: 'day' | 'week' | 'month' = 'day';
+    const span =
+      Math.round(
+        (new Date(range.to + 'T00:00:00Z').getTime() -
+          new Date(range.from + 'T00:00:00Z').getTime()) /
+          86400000
+      ) + 1;
+    const m: 'day' | 'week' | 'month' = span <= 14 ? 'day' : span <= 140 ? 'week' : 'month';
 
-    // Series = locations present in range, ordered by total calls (stable colours).
-    const totals = new Map<string, number>();
-    const nameOf = new Map<string, string>();
-    for (const r of rows) {
-      const name = `${r.city}${r.state ? `, ${r.state}` : ''}`;
-      nameOf.set(r.location_id, name);
-      totals.set(name, (totals.get(name) || 0) + r.calls);
-    }
-    const seriesNames = [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => n);
-
-    // Build zero-filled buckets across the whole range so areas stay continuous.
+    // Zero-filled buckets across the range so areas stay continuous.
     const buckets = new Map<string, Record<string, number>>();
     let cur = bucketStart(range.from, m);
-    const end = range.to;
     let guard = 0;
-    while (cur <= end && guard++ < 1000) {
-      const row: Record<string, number> = { _key: 0 } as any;
+    while (cur <= range.to && guard++ < 2000) {
+      const row: Record<string, number> = {} as any;
       (row as any).date = cur;
-      seriesNames.forEach((n) => (row[n] = 0));
+      stable.forEach((s) => (row[s.name] = 0));
       buckets.set(cur, row);
       cur = nextBucket(cur, m);
     }
+    let inRangeCalls = 0;
     for (const r of rows) {
-      const key = bucketStart(r.date, m);
-      const row = buckets.get(key);
-      if (!row) continue;
-      const name = `${r.city}${r.state ? `, ${r.state}` : ''}`;
-      row[name] = (row[name] || 0) + r.calls;
+      inRangeCalls += r.calls;
+      const row = buckets.get(bucketStart(r.date, m));
+      if (row) row[nameOf(r)] = (row[nameOf(r)] || 0) + r.calls;
     }
     const out = [...buckets.values()].map((row) => ({
       ...row,
-      total: seriesNames.reduce((s, n) => s + (row[n] as number || 0), 0),
+      total: stable.reduce((s, se) => s + ((row[se.name] as number) || 0), 0),
     }));
-    return { data: out, series: seriesNames, mode: m };
+    return { data: out, series: stable, mode: m, hasCalls: inRangeCalls > 0 };
   }, [records, range]);
 
   const tickGap = Math.max(0, Math.floor(data.length / 12));
+  const modeWord = mode === 'day' ? 'daily' : mode === 'week' ? 'weekly' : 'monthly';
 
-  if (!series.length) {
+  if (!hasCalls) {
     return (
       <div className="card card-pad">
         <div className="loading" style={{ padding: '40px 0' }}>
@@ -123,17 +129,17 @@ export default function GBPTimeline({
     <div className="card card-pad">
       <div className="row-flex" style={{ marginBottom: 16 }}>
         <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
-          Daily GBP calls by location
+          GBP calls by location · {modeWord}
         </div>
       </div>
       <div style={{ width: '100%', height: 340 }}>
         <ResponsiveContainer>
           <ComposedChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
             <defs>
-              {series.map((n, i) => (
-                <linearGradient key={n} id={`gbp-${i}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.9} />
-                  <stop offset="95%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.55} />
+              {series.map((s) => (
+                <linearGradient key={s.gid} id={s.gid} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={s.color} stopOpacity={0.9} />
+                  <stop offset="95%" stopColor={s.color} stopOpacity={0.55} />
                 </linearGradient>
               ))}
             </defs>
@@ -163,18 +169,18 @@ export default function GBPTimeline({
               }}
             />
             <Legend content={(p: any) => <ChartLegend payload={p?.payload} />} />
-            {series.map((n, i) => (
+            {series.map((s) => (
               <Area
-                key={n}
+                key={s.name}
                 type="linear"
-                dataKey={n}
-                name={n}
+                dataKey={s.name}
+                name={s.name}
                 stackId="1"
-                stroke={PALETTE[i % PALETTE.length]}
+                stroke={s.color}
                 strokeWidth={2}
                 dot={false}
                 activeDot={{ r: 3 }}
-                fill={`url(#gbp-${i})`}
+                fill={`url(#${s.gid})`}
               />
             ))}
             <Line
