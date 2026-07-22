@@ -23,7 +23,7 @@ export default function SummaryCards({
     const callrailAll = sum('callrailAll');
     const callrailFirst = sum('callrailFirst');
     const forms = sum('forms');
-    const gbp = sum('gbpCalls');
+    const gbp = sum('gbp');
     const leadtrap = sum('leadtrap');
     const email = sum('email');
     return {
@@ -41,7 +41,7 @@ export default function SummaryCards({
   const totalCard = { label: 'Total Leads', value: totals.total, foot: 'All channels combined' };
   const cards = [
     { label: 'Form Submissions', value: totals.forms, foot: 'Webflow forms' },
-    { label: 'GBP Direct Calls', value: totals.gbp, foot: 'Google profile calls' },
+    { label: 'GBP Leads', value: totals.gbp, foot: 'Calls + website clicks' },
   ];
 
   // Phone leads as a funnel: every call -> first-time callers -> qualified.

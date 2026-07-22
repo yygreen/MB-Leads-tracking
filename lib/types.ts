@@ -25,7 +25,9 @@ export interface TimelinePoint {
   forms: number;
   leadtrap: number;
   email: number;
-  gbpCalls: number;
+  /** GBP leads = CALL_CLICKS + WEBSITE_CLICKS across the 4 managed profiles
+   *  (directions/impressions are visibility, not leads). */
+  gbp: number;
   ga4Sessions: number;
 }
 
@@ -33,7 +35,7 @@ export interface SummaryCards {
   totalLeads30d: number;
   callrailCalls30d: number;
   formSubmissions30d: number;
-  gbpDirectCalls30d: number;
+  gbpLeads30d: number;
 }
 
 export interface ChannelMixRow {
@@ -68,10 +70,26 @@ export interface GBPLocationRow {
   name: string;
   status: 'active' | 'pending';
   note?: string;
+  state?: string | null;
+  location_id?: string;
+  /** leads = calls + website clicks */
+  leads?: number | null;
   calls: number | null;
   directions: number | null;
   websiteClicks: number | null;
   impressions: number | null;
+}
+
+/** GBP rolled up per state (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins). */
+export interface GBPStateRow {
+  state: string;
+  locations: number;
+  /** leads = calls + website clicks */
+  leads: number;
+  calls: number;
+  directions: number;
+  websiteClicks: number;
+  impressions: number;
 }
 
 export interface SourceStatusRow {
@@ -107,6 +125,7 @@ export interface DashboardData {
   utmSeries: UTMSeries[];
   forms: FormRow[];
   gbpLocations: GBPLocationRow[];
+  gbpStates: GBPStateRow[];
   sources: SourceStatusRow[];
   /** true when served from mock fallback rather than real blob data */
   isMock?: boolean;

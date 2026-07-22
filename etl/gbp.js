@@ -12,20 +12,37 @@ import { isMain } from './_run.js';
 
 const GROUP_NAME = 'Mastermind Behavior All Locations';
 
-// The four managed profiles. Match discovered locations by store code first,
-// then by an address/title pattern (Lakewood has no store code).
+// The four confirmed, managed profiles — keyed by their Performance-API
+// location_id (verified via discovery on the live group). This is an EXPLICIT
+// ALLOWLIST: only these four roll into the dashboard. A location the group
+// returns that is NOT in this list is surfaced for review, never auto-summed,
+// so a stray/duplicate/old listing can't silently inflate the numbers.
+//   NJ = Lakewood + Hackensack   ·   GA = Macon + Warner Robins
+// Match discovered locations by location_id first, then store code, then an
+// address/title pattern (Lakewood has no store code).
 const KNOWN_LOCATIONS = [
-  { city: 'Macon', state: 'GA', storeCode: '15994646695861665134', match: /presidential|\bmacon\b|31206/i },
-  { city: 'Warner Robins', state: 'GA', storeCode: '11885738727771819361', match: /watson|warner\s*robins|31093/i },
-  { city: 'Lakewood', state: 'NJ', storeCode: null, match: /monmouth|\blakewood\b|08701/i },
-  { city: 'Hackensack', state: 'NJ', storeCode: '08328327118053228886', match: /hackensack|07601/i },
+  { city: 'Macon', state: 'GA', location_id: '13129990522712001976', storeCode: '15994646695861665134', match: /presidential|\bmacon\b|31206/i },
+  { city: 'Warner Robins', state: 'GA', location_id: '7522827089246541481', storeCode: '11885738727771819361', match: /watson|warner\s*robins|31093/i },
+  { city: 'Lakewood', state: 'NJ', location_id: '6319645560586507966', storeCode: null, match: /monmouth|\blakewood\b|08701/i },
+  { city: 'Hackensack', state: 'NJ', location_id: '4727786949203212697', storeCode: '08328327118053228886', match: /hackensack|07601/i },
 ];
+
+// The allowlist itself — the only location_ids permitted into aggregate/rollup.
+export const ALLOWED_LOCATION_IDS = KNOWN_LOCATIONS.map((k) => k.location_id);
+const ALLOWED_SET = new Set(ALLOWED_LOCATION_IDS);
+
+// LEAD SIGNAL (locked with the client): a GBP lead = CALL_CLICKS + WEBSITE_CLICKS.
+// Direction requests are engagement/visibility, impressions are visibility, and
+// BUSINESS_CONVERSATIONS is off (all-zero) on these profiles — none count as leads.
+export function leadCount(rec) {
+  return (Number(rec?.calls) || 0) + (Number(rec?.websiteClicks) || 0);
+}
 
 const LEAD_METRICS = [
   'CALL_CLICKS',
   'WEBSITE_CLICKS',
-  'BUSINESS_DIRECTION_REQUESTS',
-  'BUSINESS_CONVERSATIONS',
+  'BUSINESS_DIRECTION_REQUESTS', // engagement (directions) — pulled, NOT a lead
+  'BUSINESS_CONVERSATIONS', // off on these profiles — pulled for completeness only
 ];
 const VISIBILITY_METRICS = [
   'BUSINESS_IMPRESSIONS_DESKTOP_MAPS',
@@ -111,9 +128,13 @@ function addressString(a) {
 function mapLocation(loc) {
   const storeCode = loc.storeCode || null;
   const addr = addressString(loc.storefrontAddress);
-  let known = storeCode ? KNOWN_LOCATIONS.find((k) => k.storeCode === storeCode) : null;
-  if (!known) known = KNOWN_LOCATIONS.find((k) => k.match.test(addr) || k.match.test(loc.title || ''));
   const id = String(loc.name || '').split('/').pop();
+  // location_id is the ground truth (verified via discovery); fall back to store
+  // code, then an address/title pattern, so city/state still resolve if Google
+  // ever re-issues an id.
+  let known = KNOWN_LOCATIONS.find((k) => k.location_id === id);
+  if (!known && storeCode) known = KNOWN_LOCATIONS.find((k) => k.storeCode === storeCode);
+  if (!known) known = KNOWN_LOCATIONS.find((k) => k.match.test(addr) || k.match.test(loc.title || ''));
   return {
     location_id: id,
     name: loc.name, // locations/{id} — the Performance API address
@@ -140,6 +161,15 @@ export async function discover(accessToken) {
     accountCandidates: accounts.map((a) => ({ name: a.name, accountName: a.accountName, type: a.type })),
     locations,
   };
+}
+
+/** Split discovered locations into the four allowed profiles and everything
+ *  else. `stray` is surfaced (never summed) so a new/duplicate/old listing on
+ *  the group gets reviewed before it can enter the numbers. */
+export function partitionLocations(locations) {
+  const allowed = locations.filter((l) => ALLOWED_SET.has(l.location_id));
+  const stray = locations.filter((l) => !ALLOWED_SET.has(l.location_id));
+  return { allowed, stray };
 }
 
 // --- metrics ----------------------------------------------------------------
@@ -224,10 +254,18 @@ export async function pull() {
   }
   const { accessToken } = await getAccessToken(c);
   const { locations } = await discover(accessToken);
+  // Only the four allowlisted profiles roll up; anything else is surfaced, not summed.
+  const { allowed, stray } = partitionLocations(locations);
+  if (stray.length) {
+    console.warn(
+      `[etl:gbp] ${stray.length} un-allowlisted location(s) skipped: ` +
+        stray.map((s) => `${s.location_id} (${s.title || s.address || '?'})`).join('; ')
+    );
+  }
   // Backfill to Feb 2026 to align GBP history with the CallRail tracking window.
   const { startDate, endDate } = metricsWindow({ backfillTo: '2026-02-01' });
   const out = [];
-  for (const loc of locations) {
+  for (const loc of allowed) {
     out.push(...(await fetchLocationMetrics(loc, accessToken, { startDate, endDate })));
   }
   return out;

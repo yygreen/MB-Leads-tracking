@@ -6,6 +6,7 @@ import type {
   UTMRecord,
   FormRow,
   GBPLocationRow,
+  GBPStateRow,
   SourceStatusRow,
 } from './types';
 
@@ -67,7 +68,7 @@ function buildTimeline(): TimelinePoint[] {
       forms: randIn(rng, 1, 4, s),
       leadtrap: rng() < 0.35 * s ? 1 : 0,
       email: rng() < 0.25 * s ? 1 : 0,
-      gbpCalls: randIn(rng, 1, 5, s),
+      gbp: randIn(rng, 2, 8, s),
       ga4Sessions: randIn(rng, 30, 150, s),
     });
   }
@@ -88,7 +89,7 @@ function buildChannelMix(timeline: TimelinePoint[]): ChannelMixRow[] {
   const channels: Array<{ channel: string; key: keyof TimelinePoint }> = [
     { channel: 'CallRail', key: 'callrail' },
     { channel: 'Forms', key: 'forms' },
-    { channel: 'GBP Calls', key: 'gbpCalls' },
+    { channel: 'GBP', key: 'gbp' },
     { channel: 'Leadtrap', key: 'leadtrap' },
     { channel: 'Email', key: 'email' },
   ];
@@ -157,7 +158,7 @@ function buildUTMTimeline(timeline: TimelinePoint[]) {
   const rng = mulberry32(0x5e1d_42ab);
   const utmSeries = UTM_DIST.map((d) => ({ key: d.combo, name: d.combo }));
   const utmTimeline = timeline.map((p) => {
-    const total = p.callrail + p.forms + p.leadtrap + p.gbpCalls;
+    const total = p.callrail + p.forms + p.leadtrap + p.gbp;
     const row: { date: string; [k: string]: number | string } = { date: p.date };
     let assigned = 0;
     UTM_DIST.forEach((d, i) => {
@@ -186,46 +187,38 @@ function buildForms(formTotal30d: number): FormRow[] {
     .sort((a, b) => b.count - a.count);
 }
 
+// Sample per-location figures for the four managed profiles (all now in the
+// "Mastermind Behavior All Locations" group). leads = calls + website clicks.
+const MOCK_GBP: Array<Omit<GBPLocationRow, 'leads'>> = [
+  { name: 'Lakewood, NJ', state: 'NJ', status: 'active', calls: 15, directions: 40, websiteClicks: 61, impressions: 1684 },
+  { name: 'Hackensack, NJ', state: 'NJ', status: 'active', calls: 3, directions: 42, websiteClicks: 4, impressions: 196 },
+  { name: 'Macon, GA', state: 'GA', status: 'active', calls: 14, directions: 61, websiteClicks: 13, impressions: 472 },
+  { name: 'Warner Robins, GA', state: 'GA', status: 'active', calls: 17, directions: 44, websiteClicks: 18, impressions: 182 },
+];
+
 function buildGBPLocations(): GBPLocationRow[] {
-  // Real Mastermind Behavior Services GBP profiles. Performance-API tracking is
-  // only possible for profiles the team manages; the rest are flagged until
-  // ownership/access is granted. (NC has no GBP listing live yet.)
-  return [
-    {
-      name: 'Hackensack, NJ',
-      status: 'active',
-      calls: 92,
-      directions: 188,
-      websiteClicks: 154,
-      impressions: 8730,
-    },
-    {
-      name: 'Warner Robins, GA',
-      status: 'active',
-      calls: 17,
-      directions: 41,
-      websiteClicks: 28,
-      impressions: 1320,
-    },
-    {
-      name: 'Lakewood, NJ',
-      status: 'pending',
-      note: 'Unclaimed — not yet claimed by your account',
-      calls: null,
-      directions: null,
-      websiteClicks: null,
-      impressions: null,
-    },
-    {
-      name: 'Macon, GA',
-      status: 'pending',
-      note: 'Unclaimed — not yet claimed by your account',
-      calls: null,
-      directions: null,
-      websiteClicks: null,
-      impressions: null,
-    },
-  ];
+  return MOCK_GBP.map((l) => ({
+    ...l,
+    leads: (l.calls || 0) + (l.websiteClicks || 0),
+  })).sort((a, b) => (b.leads || 0) - (a.leads || 0));
+}
+
+function buildGBPStates(): GBPStateRow[] {
+  const map = new Map<string, GBPStateRow>();
+  MOCK_GBP.forEach((l) => {
+    const st = l.state || 'Unknown';
+    const cur =
+      map.get(st) ||
+      { state: st, locations: 0, leads: 0, calls: 0, directions: 0, websiteClicks: 0, impressions: 0 };
+    cur.locations += 1;
+    cur.calls += l.calls || 0;
+    cur.directions += l.directions || 0;
+    cur.websiteClicks += l.websiteClicks || 0;
+    cur.impressions += l.impressions || 0;
+    cur.leads += (l.calls || 0) + (l.websiteClicks || 0);
+    map.set(st, cur);
+  });
+  return [...map.values()].sort((a, b) => b.leads - a.leads);
 }
 
 function buildSources(): SourceStatusRow[] {
@@ -246,8 +239,8 @@ export function getMockDashboard(): DashboardData {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
-  const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
+  const gbp30 = sumLast(timeline, 'gbp', 30);
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbp30;
   const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
 
   return {
@@ -256,7 +249,7 @@ export function getMockDashboard(): DashboardData {
       totalLeads30d,
       callrailCalls30d: callrail30,
       formSubmissions30d: forms30,
-      gbpDirectCalls30d: gbpCalls30,
+      gbpLeads30d: gbp30,
     },
     timeline,
     channelMix: buildChannelMix(timeline),
@@ -266,6 +259,7 @@ export function getMockDashboard(): DashboardData {
     utmSeries,
     forms: buildForms(forms30),
     gbpLocations: buildGBPLocations(),
+    gbpStates: buildGBPStates(),
     sources: buildSources(),
     isMock: true,
   };

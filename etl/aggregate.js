@@ -5,7 +5,10 @@
 // Standalone: `node etl/aggregate.js`
 import { readJSON, writeJSON, readCollection } from './_lib.js';
 import { qualifyCalls } from './callrail.js';
+import { ALLOWED_LOCATION_IDS, leadCount } from './gbp.js';
 import { isMain } from './_run.js';
+
+const GBP_ALLOWED = new Set(ALLOWED_LOCATION_IDS);
 
 const DAYS = 180;
 
@@ -24,7 +27,7 @@ function emptyTimeline() {
       forms: 0,
       leadtrap: 0,
       email: 0,
-      gbpCalls: 0,
+      gbp: 0,
       ga4Sessions: 0,
     });
   }
@@ -71,7 +74,10 @@ export async function aggregate() {
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
   email.forEach((e) => bump(dayKey(e.timestamp), 'email'));
-  gbp.forEach((g) => bump(g.date, 'gbpCalls', g.calls || 0));
+  // GBP: only the four allowlisted profiles; a GBP lead = calls + website clicks
+  // (directions/impressions are visibility, not leads — see etl/gbp.js).
+  const gbpRows = gbp.filter((g) => GBP_ALLOWED.has(g.location_id));
+  gbpRows.forEach((g) => bump(g.date, 'gbp', leadCount(g)));
   ga4.forEach((s) => bump(s.date, 'ga4Sessions', s.sessions || 0));
 
   // --- summary + channel mix ---
@@ -79,13 +85,13 @@ export async function aggregate() {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
-  const gbpCalls30 = sumLast(timeline, 'gbpCalls', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
+  const gbp30 = sumLast(timeline, 'gbp', 30);
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbp30;
 
   const mixRaw = [
     { channel: 'CallRail', count: callrail30 },
     { channel: 'Forms', count: forms30 },
-    { channel: 'GBP Calls', count: gbpCalls30 },
+    { channel: 'GBP', count: gbp30 },
     { channel: 'Leadtrap', count: leadtrap30 },
     { channel: 'Email', count: email30 },
   ];
@@ -182,25 +188,53 @@ export async function aggregate() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  // --- GBP per-location (last 30 days, summed) ---
+  // --- GBP per-location + per-state (last 30 days, summed, allowlist only) ---
+  // leads = calls + website clicks; directions/impressions kept as visibility.
+  const recentGbp = gbpRows.filter((g) => g.date && recent(`${g.date}T00:00:00Z`));
   const locMap = new Map();
-  gbp.forEach((g) => {
-    if (g.date && !recent(`${g.date}T00:00:00Z`)) return;
-    const cur = locMap.get(g.location) || {
-      name: g.location,
+  const stateMap = new Map();
+  recentGbp.forEach((g) => {
+    const cityName = `${g.city}${g.state ? `, ${g.state}` : ''}`;
+    const loc = locMap.get(cityName) || {
+      name: cityName,
+      state: g.state || null,
+      location_id: g.location_id,
       status: 'active',
+      leads: 0,
       calls: 0,
       directions: 0,
       websiteClicks: 0,
       impressions: 0,
     };
-    cur.calls += g.calls || 0;
-    cur.directions += g.directions || 0;
-    cur.websiteClicks += g.websiteClicks || 0;
-    cur.impressions += g.impressions || 0;
-    locMap.set(g.location, cur);
+    loc.leads += leadCount(g);
+    loc.calls += g.calls || 0;
+    loc.directions += g.directions || 0;
+    loc.websiteClicks += g.websiteClicks || 0;
+    loc.impressions += g.impressions || 0;
+    locMap.set(cityName, loc);
+
+    const st = g.state || 'Unknown';
+    const state = stateMap.get(st) || {
+      state: st,
+      locations: new Set(),
+      leads: 0,
+      calls: 0,
+      directions: 0,
+      websiteClicks: 0,
+      impressions: 0,
+    };
+    state.locations.add(g.location_id);
+    state.leads += leadCount(g);
+    state.calls += g.calls || 0;
+    state.directions += g.directions || 0;
+    state.websiteClicks += g.websiteClicks || 0;
+    state.impressions += g.impressions || 0;
+    stateMap.set(st, state);
   });
-  const gbpLocations = [...locMap.values()];
+  const gbpLocations = [...locMap.values()].sort((a, b) => b.leads - a.leads);
+  const gbpStates = [...stateMap.values()]
+    .map((s) => ({ ...s, locations: s.locations.size }))
+    .sort((a, b) => b.leads - a.leads);
 
   // --- source status ---
   const status = (arr, pendingLabel) =>
@@ -220,7 +254,7 @@ export async function aggregate() {
       totalLeads30d,
       callrailCalls30d: callrail30,
       formSubmissions30d: forms30,
-      gbpDirectCalls30d: gbpCalls30,
+      gbpLeads30d: gbp30,
     },
     timeline,
     channelMix,
@@ -230,6 +264,7 @@ export async function aggregate() {
     utmSeries,
     forms: formRows,
     gbpLocations,
+    gbpStates,
     sources,
     isMock: false,
   };
