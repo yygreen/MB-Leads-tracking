@@ -60,17 +60,22 @@ export async function aggregate() {
     if (p) p[key] += n;
   };
 
-  // Phone funnel: every call -> first-time callers -> qualified leads.
-  // `callrail` (the lead count used in totals/mix/UTM) is now QUALIFIED calls:
-  // inbound + answered + first-time + past the IVR-adjusted duration bar,
-  // deduped by caller number. See etl/callrail.js for the config.
-  const qualifiedCalls = qualifyCalls(callrail);
+  // Phone-lead counting is GATED behind CALLRAIL_QUALIFY. Default (unset) = RAW
+  // counts: every CallRail record is a lead (the long-standing behavior). The
+  // qualification (inbound + answered + first-time + IVR-adjusted duration bar,
+  // deduped by caller number — see etl/callrail.js) applies ONLY when
+  // CALLRAIL_QUALIFY=1, which stays OFF in production until the client
+  // verification session locks the real IVR timing + deny-list. Turning it on
+  // later is a deliberate one-flag change, its own client-facing moment.
+  const QUALIFY = process.env.CALLRAIL_QUALIFY === '1';
+  const leadCalls = QUALIFY ? qualifyCalls(callrail) : callrail;
+  // Funnel context (always computed; only surfaced in the UI when QUALIFY is on).
   callrail.forEach((c) => {
     if (c.direction && c.direction !== 'inbound') return;
     bump(dayKey(c.timestamp), 'callrailAll');
     if (c.first_call !== false) bump(dayKey(c.timestamp), 'callrailFirst');
   });
-  qualifiedCalls.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
+  leadCalls.forEach((c) => bump(dayKey(c.timestamp), 'callrail'));
   forms.forEach((f) => bump(dayKey(f.timestamp || f.submittedAt), 'forms'));
   leadtrap.forEach((l) => bump(dayKey(l.timestamp), 'leadtrap'));
   email.forEach((e) => bump(dayKey(e.timestamp), 'email'));
@@ -109,7 +114,7 @@ export async function aggregate() {
     new Date(ts).getTime() >= Date.now() - 30 * 86400000;
   const utmRecords = [];
   const taggedByChannel = [
-    ...qualifiedCalls.map((r) => ['callrail', r]),
+    ...leadCalls.map((r) => ['callrail', r]),
     ...forms.map((r) => ['forms', r]),
     ...leadtrap.map((r) => ['leadtrap', r]),
     ...email.map((r) => ['email', r]),
@@ -146,7 +151,7 @@ export async function aggregate() {
     `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
   const comboTotals = new Map();
   const comboByDate = new Map(); // date -> Map(combo -> count)
-  [...qualifiedCalls, ...forms, ...leadtrap, ...email].forEach((r) => {
+  [...leadCalls, ...forms, ...leadtrap, ...email].forEach((r) => {
     const ts = r.timestamp || r.submittedAt;
     if (!ts) return;
     const date = dayKey(ts);
@@ -257,6 +262,9 @@ export async function aggregate() {
       formSubmissions30d: forms30,
       gbpCalls30d: gbpCalls30,
     },
+    // Drives the CallRail summary card: funnel when qualification is on, single
+    // raw-count card when off.
+    callrailQualified: QUALIFY,
     timeline,
     channelMix,
     utmSources,

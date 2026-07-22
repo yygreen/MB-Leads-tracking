@@ -121,6 +121,9 @@ export interface DashboardData {
   utmTimeline: UTMTimelinePoint[];
   /** the source/medium combos rendered as series (top combos + "Other") */
   utmSeries: UTMSeries[];
+  /** true when CallRail lead counts use the qualification filter (funnel view);
+   *  false = raw counts (single card). Gated by CALLRAIL_QUALIFY, default off. */
+  callrailQualified?: boolean;
   forms: FormRow[];
   gbpLocations: GBPLocationRow[];
   gbpStates: GBPStateRow[];

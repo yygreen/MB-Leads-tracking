@@ -18,12 +18,36 @@ const STAGING_KEY = 'gbp_staging.json';
 const LIVE_KEY = 'gbp.json';
 
 export async function POST(req: Request) {
-  const confirm = new URL(req.url).searchParams.get('confirm');
+  const url = new URL(req.url);
+  const confirm = url.searchParams.get('confirm');
+  const reaggregateOnly = url.searchParams.get('reaggregate') === '1';
   if (confirm !== 'promote-staging') {
     return NextResponse.json(
       { ok: false, error: 'refusing to run without ?confirm=promote-staging' },
       { status: 400 }
     );
+  }
+
+  // Rebuild dashboard.json from the current source blobs WITHOUT pulling or
+  // touching gbp.json. Safe recompute — used to settle a read-after-write race
+  // or to re-render after an env/flag change.
+  if (reaggregateOnly) {
+    try {
+      const dashboard = await aggregate();
+      await writeJSON('dashboard.json', dashboard);
+      return NextResponse.json({
+        ok: true,
+        reaggregated: true,
+        totalLeads30d: dashboard.summary.totalLeads30d,
+        callrailQualified: dashboard.callrailQualified,
+        gbpCalls30d: dashboard.summary.gbpCalls30d,
+        gbpStates: dashboard.gbpStates,
+        gbpLocations: dashboard.gbpLocations,
+        ranAt: new Date().toISOString(),
+      });
+    } catch (err: any) {
+      return NextResponse.json({ ok: false, error: String(err?.message || err) }, { status: 500 });
+    }
   }
 
   try {

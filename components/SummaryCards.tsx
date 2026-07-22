@@ -12,9 +12,11 @@ function fmt(n: number): string {
 export default function SummaryCards({
   timeline,
   range,
+  qualified = false,
 }: {
   timeline: TimelinePoint[];
   range: DateRange;
+  qualified?: boolean;
 }) {
   const totals = useMemo(() => {
     const slice = timeline.filter((p) => inRange(p.date, range));
@@ -62,27 +64,36 @@ export default function SummaryCards({
         <div className="metric-foot">{totalCard.foot}</div>
         <div className="metric-accent" />
       </div>
-      <div className="card card-pad">
-        <div className="metric-label">Phone Leads (CallRail)</div>
-        {funnel.map((f, i) => (
-          <div
-            key={f.label}
-            className="row-flex"
-            style={{ alignItems: 'baseline', marginTop: i === 0 ? 10 : 6 }}
-          >
-            <span className="metric-foot" style={{ marginTop: 0 }}>
-              {f.label}
-            </span>
-            <span
-              className="metric-value"
-              style={{ fontSize: i === 2 ? 26 : 18, marginLeft: 'auto' }}
+      {qualified ? (
+        <div className="card card-pad">
+          <div className="metric-label">Phone Leads (CallRail)</div>
+          {funnel.map((f, i) => (
+            <div
+              key={f.label}
+              className="row-flex"
+              style={{ alignItems: 'baseline', marginTop: i === 0 ? 10 : 6 }}
             >
-              {fmt(f.value)}
-            </span>
-          </div>
-        ))}
-        <div className="metric-accent" />
-      </div>
+              <span className="metric-foot" style={{ marginTop: 0 }}>
+                {f.label}
+              </span>
+              <span
+                className="metric-value"
+                style={{ fontSize: i === 2 ? 26 : 18, marginLeft: 'auto' }}
+              >
+                {fmt(f.value)}
+              </span>
+            </div>
+          ))}
+          <div className="metric-accent" />
+        </div>
+      ) : (
+        <div className="card card-pad">
+          <div className="metric-label">Phone Leads (CallRail)</div>
+          <div className="metric-value">{fmt(totals.callrail)}</div>
+          <div className="metric-foot">CallRail tracked calls</div>
+          <div className="metric-accent" />
+        </div>
+      )}
       {cards.map((c) => (
         <div key={c.label} className="card card-pad">
           <div className="metric-label">{c.label}</div>

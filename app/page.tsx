@@ -161,7 +161,7 @@ export default function Page() {
           onPreset={handlePreset}
           onCustom={handleCustom}
         />
-        <SummaryCards timeline={data.timeline} range={range} />
+        <SummaryCards timeline={data.timeline} range={range} qualified={data.callrailQualified} />
       </Section>
 
       <Section

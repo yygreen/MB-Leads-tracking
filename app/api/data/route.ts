@@ -96,6 +96,8 @@ export async function GET() {
   data.utmRecords = data.utmRecords || [];
   // Older dashboard.json predates the GBP per-state rollup.
   data.gbpStates = data.gbpStates || [];
+  // Older dashboard.json predates the qualification flag — default to raw (false).
+  data.callrailQualified = data.callrailQualified ?? false;
 
   // Always reflect the real credential state in the status row, regardless of
   // whether the rest of the payload is live or sample data.
