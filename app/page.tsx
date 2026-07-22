@@ -210,7 +210,7 @@ export default function Page() {
 
       <Section
         title="Google Business Profile"
-        desc="Performance across the four managed profiles (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins), rolled up by state and broken out per location for the selected period. Calls (tap-to-call) is the closest-to-a-lead GBP signal; website clicks and directions are engagement, impressions are visibility — none are counted as leads."
+        desc="Performance across the four managed profiles (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins), broken out per location for the selected period. Calls (tap-to-call) is the closest-to-a-lead GBP signal; website clicks and directions are engagement, impressions are visibility — none are counted as leads."
       >
         <GBPSection />
       </Section>

@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { GBPLocationRow, GBPStateRow } from '@/lib/types';
+import type { GBPLocationRow } from '@/lib/types';
 import type { DateRange, PresetKey } from '@/lib/dateRange';
 import { presetRange, inRange, rangeLabel } from '@/lib/dateRange';
 import PeriodControl from './PeriodControl';
-import GBPStates from './GBPStates';
 import GBPLocations from './GBPLocations';
 
 interface DailyRecord {
@@ -44,7 +43,6 @@ const clamp = (v: string, lo: string, hi: string) => (v < lo ? lo : v > hi ? hi 
 function rollUp(records: DailyRecord[], range: DateRange) {
   const rows = records.filter((r) => inRange(r.date, range));
   const locMap = new Map<string, GBPLocationRow>();
-  const stateMap = new Map<string, GBPStateRow & { _ids: Set<string> }>();
   for (const r of rows) {
     const name = `${r.city}${r.state ? `, ${r.state}` : ''}`;
     const loc =
@@ -55,23 +53,9 @@ function rollUp(records: DailyRecord[], range: DateRange) {
     loc.directions = (loc.directions || 0) + r.directions;
     loc.impressions = (loc.impressions || 0) + r.impressions;
     locMap.set(name, loc);
-
-    const st = r.state || 'Unknown';
-    const s =
-      stateMap.get(st) ||
-      ({ state: st, locations: 0, calls: 0, websiteClicks: 0, directions: 0, impressions: 0, _ids: new Set<string>() } as GBPStateRow & { _ids: Set<string> });
-    s._ids.add(r.location_id);
-    s.calls += r.calls;
-    s.websiteClicks += r.websiteClicks;
-    s.directions += r.directions;
-    s.impressions += r.impressions;
-    stateMap.set(st, s);
   }
   const locations = [...locMap.values()].sort((a, b) => (b.calls || 0) - (a.calls || 0));
-  const states = [...stateMap.values()]
-    .map(({ _ids, ...s }) => ({ ...s, locations: _ids.size }))
-    .sort((a, b) => b.calls - a.calls);
-  return { locations, states };
+  return { locations };
 }
 
 export default function GBPSection() {
@@ -116,8 +100,8 @@ export default function GBPSection() {
     const provisional = selected.to > dataEnd; // reaches into the last 3 days
     const beforeFloor = selected.from < minDate;
 
-    const { locations, states } = rollUp(records, effective);
-    return { selected, effective, provisional, beforeFloor, locations, states };
+    const { locations } = rollUp(records, effective);
+    return { selected, effective, provisional, beforeFloor, locations };
   }, [data, presetKey, custom]);
 
   if (failed) {
@@ -172,10 +156,6 @@ export default function GBPSection() {
       )}
 
       <div className="subsection" style={{ marginTop: 12 }}>
-        <div className="subsection-label">By state · {rangeLabel(view.effective)}</div>
-        <GBPStates rows={view.states} />
-      </div>
-      <div className="subsection">
         <div className="subsection-label">By location · {rangeLabel(view.effective)}</div>
         <GBPLocations rows={view.locations} />
       </div>
