@@ -37,11 +37,6 @@ function addDays(iso: string, n: number) {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
-function daysBetween(a: string, b: string) {
-  return Math.round(
-    (new Date(b + 'T00:00:00Z').getTime() - new Date(a + 'T00:00:00Z').getTime()) / 86400000
-  );
-}
 // Bucket a date to the start of its day / ISO-week (Monday) / month.
 function bucketStart(iso: string, mode: 'day' | 'week' | 'month') {
   if (mode === 'day') return iso;
@@ -73,8 +68,8 @@ export default function GBPTimeline({
 }) {
   const { data, series, mode } = useMemo(() => {
     const rows = records.filter((r) => inRange(r.date, range));
-    const span = daysBetween(range.from, range.to) + 1;
-    const m: 'day' | 'week' | 'month' = span <= 14 ? 'day' : span <= 140 ? 'week' : 'month';
+    // Daily, to match the other timelines (source/medium, channels).
+    const m: 'day' | 'week' | 'month' = 'day';
 
     // Series = locations present in range, ordered by total calls (stable colours).
     const totals = new Map<string, number>();
@@ -113,7 +108,6 @@ export default function GBPTimeline({
   }, [records, range]);
 
   const tickGap = Math.max(0, Math.floor(data.length / 12));
-  const modeWord = mode === 'day' ? 'daily' : mode === 'week' ? 'weekly' : 'monthly';
 
   if (!series.length) {
     return (
@@ -129,7 +123,7 @@ export default function GBPTimeline({
     <div className="card card-pad">
       <div className="row-flex" style={{ marginBottom: 16 }}>
         <div className="metric-label" style={{ textTransform: 'none', fontSize: 13 }}>
-          GBP calls by location · {modeWord}
+          Daily GBP calls by location
         </div>
       </div>
       <div style={{ width: '100%', height: 340 }}>
