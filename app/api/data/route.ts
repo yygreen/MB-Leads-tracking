@@ -18,7 +18,6 @@ function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpCalls = 0): So
   // Location IDs are discovered at runtime, so GBP_LOCATION_IDS is intentionally
   // not required — OAuth creds are what gate the connection.
   const gbpCreds = has('GBP_CLIENT_ID', 'GBP_CLIENT_SECRET', 'GBP_REFRESH_TOKEN');
-  const ga4 = has('GA4_PROPERTY_ID', 'GA4_SERVICE_ACCOUNT_JSON');
 
   return [
     {
@@ -43,14 +42,6 @@ function liveSourceStatuses(leadtrapLeads = 0, emailLeads = 0, gbpCalls = 0): So
           : gbpCreds
             ? 'OAuth live · awaiting backfill'
             : 'awaiting OAuth (backfills history)',
-    },
-    {
-      key: 'ga4',
-      label: 'GA4',
-      status: ga4 ? 'connected' : 'pending',
-      detail: ga4
-        ? 'Data API · website traffic, not leads'
-        : 'Awaiting service account · traffic stats only (not leads)',
     },
     {
       key: 'leadtrap',
