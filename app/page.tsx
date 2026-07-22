@@ -8,7 +8,6 @@ import TopBar from '@/components/TopBar';
 import PeriodControl from '@/components/PeriodControl';
 import SummaryCards from '@/components/SummaryCards';
 import ChannelTimeline from '@/components/ChannelTimeline';
-import SessionsSparkline from '@/components/SessionsSparkline';
 import SourceTimeline from '@/components/SourceTimeline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
@@ -210,15 +209,6 @@ export default function Page() {
       </Section>
 
       <Section
-        title="Website Traffic"
-        desc="GA4 website sessions — overall traffic context, separate from the lead channels above."
-      >
-        <div style={{ maxWidth: 420 }}>
-          <SessionsSparkline timeline={data.timeline} />
-        </div>
-      </Section>
-
-      <Section
         title="Google Business Profile"
         desc="Performance across the four managed profiles (NJ = Lakewood + Hackensack, GA = Macon + Warner Robins), broken out per location. Calls (tap-to-call) is the closest-to-a-lead GBP signal; website clicks and directions are engagement, impressions are visibility — none are counted as leads."
       >
@@ -230,7 +220,7 @@ export default function Page() {
 
       <Section
         title="Data Sources Status"
-        desc="Connection state per source. Today, leads come from CallRail + Webflow Forms; GBP and Leadtrap join the lead totals as they come online. GA4 is website traffic, not leads."
+        desc="Connection state per source. Today, leads come from CallRail + Webflow Forms; GBP and Leadtrap join the lead totals as they come online."
       >
         <SourcesStatus sources={data.sources} />
       </Section>
