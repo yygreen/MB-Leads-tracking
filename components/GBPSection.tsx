@@ -5,6 +5,7 @@ import type { GBPLocationRow } from '@/lib/types';
 import type { DateRange, PresetKey } from '@/lib/dateRange';
 import { presetRange, inRange, rangeLabel } from '@/lib/dateRange';
 import PeriodControl from './PeriodControl';
+import GBPTimeline from './GBPTimeline';
 import GBPLocations from './GBPLocations';
 
 interface DailyRecord {
@@ -156,6 +157,9 @@ export default function GBPSection() {
       )}
 
       <div className="subsection" style={{ marginTop: 12 }}>
+        <GBPTimeline records={data.records} range={view.effective} />
+      </div>
+      <div className="subsection">
         <div className="subsection-label">By location · {rangeLabel(view.effective)}</div>
         <GBPLocations rows={view.locations} />
       </div>
