@@ -38,6 +38,29 @@ function dayKey(ts) {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
+// Canonicalize a UTM (source, medium) pair so the same traffic doesn't split
+// into near-duplicate rows. Trims/lowercases, and when the medium is blank but
+// the source string actually carries it ("google organic" → source "google",
+// medium "organic"), splits it back out. Only splits on a recognized medium so
+// legitimate multi-word/underscore sources (e.g. "facebook_all") are untouched.
+const KNOWN_MEDIA = new Set([
+  'organic', 'cpc', 'ppc', 'paid', 'search', 'referral', 'email', 'social', 'display', 'affiliate', 'video',
+]);
+function normalizeUTM(rawSource, rawMedium) {
+  let s = String(rawSource || '').trim().toLowerCase();
+  let m = String(rawMedium || '').trim().toLowerCase();
+  if (m === '(none)') m = '';
+  if (s === '(direct)') s = '';
+  if (!m) {
+    const parts = s.split(/\s+/).filter(Boolean);
+    if (parts.length === 2 && KNOWN_MEDIA.has(parts[1])) {
+      s = parts[0];
+      m = parts[1];
+    }
+  }
+  return { source: s || '(direct)', medium: m || '(none)' };
+}
+
 function sumLast(timeline, key, days) {
   return timeline.slice(-days).reduce((a, p) => a + (p[key] || 0), 0);
 }
@@ -124,10 +147,11 @@ export async function aggregate() {
     if (!ts) return;
     const date = dayKey(ts);
     if (!index.has(date)) return; // only within the 180-day window
+    const { source, medium } = normalizeUTM(r.utm_source, r.utm_medium);
     utmRecords.push({
       date,
-      source: r.utm_source || '(direct)',
-      medium: r.utm_medium || '(none)',
+      source,
+      medium,
       channel, // backend-only: lets us split "(direct)" by calls vs forms
     });
   });
@@ -147,8 +171,10 @@ export async function aggregate() {
     .sort((a, b) => b.count - a.count);
 
   // --- source/medium timeline (daily counts per combo, top combos + Other) ---
-  const comboLabel = (r) =>
-    `${r.utm_source || '(direct)'} / ${r.utm_medium || '(none)'}`;
+  const comboLabel = (r) => {
+    const { source, medium } = normalizeUTM(r.utm_source, r.utm_medium);
+    return `${source} / ${medium}`;
+  };
   const comboTotals = new Map();
   const comboByDate = new Map(); // date -> Map(combo -> count)
   [...leadCalls, ...forms, ...leadtrap, ...email].forEach((r) => {
