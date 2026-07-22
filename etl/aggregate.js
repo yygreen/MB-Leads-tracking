@@ -86,9 +86,11 @@ export async function aggregate() {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
-  // gbp30 is GBP profile CALLS (calls only) — the intent signal, not a summed lead.
+  // gbp30 is GBP profile CALLS (calls only) — the intent signal, surfaced as its
+  // own components block. GBP does NOT feed Total Leads (client decision): the
+  // headline counts CallRail + Forms + Leadtrap + Email only.
   const gbpCalls30 = sumLast(timeline, 'gbp', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30;
 
   const mixRaw = [
     { channel: 'CallRail', count: callrail30 },

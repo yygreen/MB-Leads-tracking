@@ -235,8 +235,10 @@ export function getMockDashboard(): DashboardData {
   const forms30 = sumLast(timeline, 'forms', 30);
   const leadtrap30 = sumLast(timeline, 'leadtrap', 30);
   const email30 = sumLast(timeline, 'email', 30);
+  // GBP calls are surfaced as their own components block, NOT counted in Total
+  // Leads (headline = CallRail + Forms + Leadtrap + Email only).
   const gbpCalls30 = sumLast(timeline, 'gbp', 30);
-  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30 + gbpCalls30;
+  const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30;
   const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
 
   return {

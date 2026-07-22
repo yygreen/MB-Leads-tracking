@@ -34,11 +34,12 @@ export default function SummaryCards({
       gbp,
       leadtrap,
       email,
-      total: callrail + forms + gbp + leadtrap + email,
+      // GBP calls are NOT in Total Leads (shown as their own components block).
+      total: callrail + forms + leadtrap + email,
     };
   }, [timeline, range]);
 
-  const totalCard = { label: 'Total Leads', value: totals.total, foot: 'All channels combined' };
+  const totalCard = { label: 'Total Leads', value: totals.total, foot: 'CallRail + Forms + Leadtrap + Email' };
   const cards = [
     { label: 'Form Submissions', value: totals.forms, foot: 'Webflow forms' },
     { label: 'GBP Calls', value: totals.gbp, foot: 'Google profile tap-to-call' },
