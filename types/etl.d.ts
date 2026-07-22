@@ -13,6 +13,36 @@ declare module '@/etl/callrail.js' {
 }
 declare module '@/etl/gbp.js' {
   export function pull(): Promise<any[]>;
+  export function gbpCreds(): { clientId: string; clientSecret: string; refreshToken: string } | null;
+  export function getAccessToken(c: {
+    clientId: string;
+    clientSecret: string;
+    refreshToken: string;
+  }): Promise<{ accessToken: string; scope: string | null }>;
+  export function discover(accessToken: string): Promise<{
+    account: { name: string; accountName: string | null; type: string | null };
+    accountCandidates: Array<{ name: string; accountName?: string; type?: string }>;
+    locations: Array<{
+      location_id: string;
+      name: string;
+      title: string | null;
+      storeCode: string | null;
+      address: string;
+      city: string;
+      state: string | null;
+      matched: boolean;
+    }>;
+  }>;
+  export function fetchLocationMetrics(
+    loc: { name: string; location_id: string; city: string; state: string | null },
+    accessToken: string,
+    opts?: { startDate: Date; endDate: Date; includeVisibility?: boolean }
+  ): Promise<any[]>;
+  export function metricsWindow(opts?: {
+    backfillTo?: string | null;
+    lagDays?: number;
+    days?: number;
+  }): { startDate: Date; endDate: Date };
 }
 declare module '@/etl/ga4.js' {
   export function pull(): Promise<any[]>;
