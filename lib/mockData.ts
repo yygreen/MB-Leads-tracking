@@ -255,6 +255,7 @@ export function getMockDashboard(): DashboardData {
     utmRecords: buildUTMRecords(utmTimeline),
     utmTimeline,
     utmSeries,
+    callrailQualified: false,
     forms: buildForms(forms30),
     gbpLocations: buildGBPLocations(),
     gbpStates: buildGBPStates(),
