@@ -154,6 +154,11 @@ export default function GBPSection() {
         }}
       />
 
+      <div className="muted" style={{ marginTop: 8, fontSize: 12.5 }}>
+        GBP data reports on a ~3-day delay, so this window ends about 3 days before today — keep
+        that in mind when comparing GBP to CallRail or Forms for the same period.
+      </div>
+
       {view.beforeFloor && (
         <div className="note-pending" style={{ marginTop: 8 }}>
           No GBP data before {fmt(minDate)} — showing from the earliest available day.
