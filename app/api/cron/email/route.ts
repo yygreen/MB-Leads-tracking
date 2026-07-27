@@ -32,7 +32,17 @@ export async function GET(req: Request) {
     return Boolean(okWebhook || okCron);
   };
 
-  const dayOf = (r: any) => String(r?.timestamp || '').slice(0, 10);
+  // Timestamps arrive in whatever format the mail source used — ISO
+  // ("2026-07-27T11:15:00Z") or an RFC-2822 header date ("Mon, 27 Jul 2026
+  // ..."). Parse to a real Date and take the UTC day, matching how the
+  // aggregate buckets leads; fall back to a leading ISO date if unparseable.
+  const dayOf = (r: any) => {
+    const raw = String(r?.timestamp || '');
+    const t = Date.parse(raw);
+    if (!Number.isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+    const m = raw.match(/\d{4}-\d{2}-\d{2}/);
+    return m ? m[0] : '';
+  };
 
   // Targeted removal — drops only the leads recorded on the given UTC date(s).
   const removeDate = params.get('removeDate');
