@@ -5,6 +5,17 @@ import type { DashboardData } from '@/lib/types';
 declare module '@/etl/_lib.js' {
   export function readJSON<T = unknown>(filename: string, fallback?: T): Promise<T>;
   export function writeJSON<T = unknown>(filename: string, data: T): Promise<T>;
+  export function readCollection<T = any>(collection: string): Promise<T[]>;
+  export function appendRecord<T = unknown>(
+    collection: string,
+    dedupKey: string,
+    record: T
+  ): Promise<unknown>;
+  export function clearCollection(collection: string): Promise<number>;
+  export function deleteFromCollection(
+    collection: string,
+    predicate: (record: any) => boolean
+  ): Promise<number>;
   export function warnMissingEnv(source: string, vars: string[]): void;
 }
 
