@@ -208,6 +208,58 @@ export async function clearCollection(collection) {
   }
 }
 
+/** Delete only the records matching `predicate(record)` — a surgical
+ *  alternative to clearCollection, so one bad/test record can be removed
+ *  without purging genuine leads. Returns the number removed. */
+export async function deleteFromCollection(collection, predicate) {
+  if (useBlob()) {
+    const { list, del } = await import('@vercel/blob');
+    let cursor;
+    let removed = 0;
+    do {
+      const res = await list({ prefix: `${collection}/`, cursor, limit: 1000 });
+      const doomed = [];
+      for (const b of res.blobs) {
+        let rec = null;
+        try {
+          rec = await readBlobByName(b.pathname);
+        } catch {
+          continue; // unreadable — leave it alone rather than guess
+        }
+        if (rec && predicate(rec)) doomed.push(b.url);
+      }
+      if (doomed.length) {
+        await del(doomed);
+        removed += doomed.length;
+      }
+      cursor = res.hasMore ? res.cursor : undefined;
+    } while (cursor);
+    return removed;
+  }
+  const dir = path.join(DATA_DIR, collection);
+  let files = [];
+  try {
+    files = await fs.readdir(dir);
+  } catch {
+    return 0;
+  }
+  let removed = 0;
+  for (const f of files) {
+    if (!f.endsWith('.json')) continue;
+    const p = path.join(dir, f);
+    try {
+      const rec = JSON.parse(await fs.readFile(p, 'utf8'));
+      if (predicate(rec)) {
+        await fs.rm(p, { force: true });
+        removed += 1;
+      }
+    } catch {
+      /* skip unreadable record */
+    }
+  }
+  return removed;
+}
+
 /** Small helper so ETL jobs can log a consistent, greppable warning. */
 export function warnMissingEnv(source, vars) {
   console.warn(

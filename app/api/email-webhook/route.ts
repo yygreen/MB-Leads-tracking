@@ -36,6 +36,25 @@ function parseEmail(raw: string | null): string | null {
   return m ? m[0].toLowerCase() : null;
 }
 
+// Senders that must never count as leads — test sends, known spammers, vendors.
+// Set EMAIL_DENY_SENDERS to a comma-separated list of either full addresses
+// ("me@example.com") or domains ("@spammy.com" / "spammy.com", which also
+// matches subdomains). Matching happens at request time on the sender address,
+// which is never stored, so denied mail leaves no trace at all.
+function isDeniedSender(email: string): boolean {
+  const raw = process.env.EMAIL_DENY_SENDERS || '';
+  const domain = email.split('@')[1] || '';
+  return raw
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+    .some((entry) => {
+      if (entry.includes('@') && !entry.startsWith('@')) return entry === email;
+      const d = entry.replace(/^@/, '');
+      return domain === d || domain.endsWith(`.${d}`);
+    });
+}
+
 export async function POST(req: Request) {
   const secret = process.env.EMAIL_WEBHOOK_SECRET;
   if (secret && req.headers.get('x-webhook-secret') !== secret) {
@@ -63,6 +82,9 @@ export async function POST(req: Request) {
   }
   if (/@(.*\.)?mastermindbehavior\.com$/i.test(email)) {
     return NextResponse.json({ ok: true, skipped: 'internal sender' });
+  }
+  if (isDeniedSender(email)) {
+    return NextResponse.json({ ok: true, skipped: 'denied sender' });
   }
 
   // Dedup key: Message-ID when available, else sender + time. This is only
