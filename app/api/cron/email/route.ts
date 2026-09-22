@@ -76,6 +76,15 @@ export async function GET(req: Request) {
         { status: 403 }
       );
     }
+    // Purges every stored lead, so it also takes an explicit confirm token.
+    // Configuring a secret should never be what arms a destructive operation
+    // — ?removeDate= above is the targeted, everyday tool.
+    if (params.get('confirm') !== 'purge-email') {
+      return NextResponse.json(
+        { ok: false, error: 'refusing to purge without ?confirm=purge-email' },
+        { status: 400 }
+      );
+    }
     const removed = await clearCollection('email');
     return NextResponse.json({ ok: true, reset: true, removed });
   }

@@ -53,10 +53,15 @@ export async function GET(req: Request) {
   const params = new URL(req.url).searchParams;
 
   if (params.get('reset') === '1') {
-    if (!process.env.CRON_SECRET) {
+    // Purges every stored lead, so it takes admin auth AND an explicit confirm
+    // token. Two independent things, deliberately: configuring CRON_SECRET (to
+    // close the admin endpoints) should never be what arms a destructive
+    // operation.
+    if (!authorizeAdmin(req)) return unauthorized(req);
+    if (params.get('confirm') !== 'purge-leadtrap') {
       return NextResponse.json(
-        { ok: false, error: 'reset requires CRON_SECRET to be set' },
-        { status: 403 }
+        { ok: false, error: 'refusing to purge without ?confirm=purge-leadtrap' },
+        { status: 400 }
       );
     }
     const removed = await clearCollection('leadtrap');

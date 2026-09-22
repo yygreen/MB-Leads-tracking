@@ -1,71 +1,20 @@
 import { NextResponse } from 'next/server';
 import { authorizeCron } from '@/lib/cron';
-import { writeJSON } from '@/etl/_lib.js';
-import { pull as pullCallrail } from '@/etl/callrail.js';
-import { pull as pullGbp } from '@/etl/gbp.js';
-import { pull as pullGa4 } from '@/etl/ga4.js';
-import { pull as pullWebflow } from '@/etl/webflow.js';
-import { guardedWrite } from '@/etl/guard.js';
-import { aggregate } from '@/etl/aggregate.js';
+import { runRefreshAll } from '@/lib/refreshAll';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 120;
 
-// Manual "refresh everything" — runs every ETL pull then re-aggregates. Backs
-// the dashboard's refresh button. Each source is independent so one failing
-// credential doesn't block the others.
+// Manual "refresh everything" for scripted/scheduled use. The dashboard's
+// Refresh button no longer comes through here — it calls the runRefreshAll
+// server action directly (see app/actions.ts) — so this route can be locked
+// down with CRON_SECRET without breaking the UI.
 export async function POST(req: Request) {
   if (!authorizeCron(req)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
-
-  // Note: leadtrap is webhook-only (no API), so it's not pulled here — its
-  // leadtrap.json is populated by /api/leadtrap-webhook and must not be wiped.
-  const jobs: Array<[string, string, () => Promise<unknown[]>]> = [
-    ['callrail', 'callrail.json', pullCallrail],
-    ['gbp', 'gbp.json', pullGbp],
-    ['ga4', 'ga4.json', pullGa4],
-  ];
-
-  const results: Record<string, { ok: boolean; count?: number; error?: string }> = {};
-  for (const [name, file, pull] of jobs) {
-    try {
-      const records = await pull();
-      // guardedWrite: a transient empty pull never clobbers existing data.
-      const written = await guardedWrite(file, records);
-      results[name] = { ok: true, count: Array.isArray(written) ? written.length : records.length };
-    } catch (err: any) {
-      console.error(`[refresh-all:${name}]`, err);
-      results[name] = { ok: false, error: String(err?.message || err) };
-    }
-  }
-
-  // Webflow forms — authoritative forms.json (guarded so an empty pull never
-  // wipes webhook-collected data).
-  try {
-    const records = await pullWebflow();
-    const written = await guardedWrite('forms.json', records);
-    results.webflow = {
-      ok: true,
-      count: Array.isArray(written) ? written.length : records.length,
-    };
-  } catch (err: any) {
-    console.error('[refresh-all:webflow]', err);
-    results.webflow = { ok: false, error: String(err?.message || err) };
-  }
-
-  let totalLeads30d = 0;
-  try {
-    const dashboard = await aggregate();
-    await writeJSON('dashboard.json', dashboard);
-    totalLeads30d = dashboard.summary.totalLeads30d;
-  } catch (err: any) {
-    console.error('[refresh-all:aggregate]', err);
-    results.aggregate = { ok: false, error: String(err?.message || err) };
-  }
-
-  return NextResponse.json({ ok: true, results, totalLeads30d, ranAt: new Date().toISOString() });
+  return NextResponse.json(await runRefreshAll());
 }
 
 // Deliberately no GET handler. This route runs every ETL pull, so a GET alias
