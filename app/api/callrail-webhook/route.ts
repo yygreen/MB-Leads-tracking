@@ -7,7 +7,17 @@ export const runtime = 'nodejs';
 // Fallback receiver for CallRail's post-call webhook. Used when the polling
 // ETL isn't sufficient (e.g. near-real-time needs). Normalizes into the same
 // shape as etl/callrail.js and appends to callrail.json.
+//
+// SECURITY: set CALLRAIL_WEBHOOK_SECRET and have CallRail send it as the
+// `x-webhook-secret` header; requests without it are then rejected. While the
+// secret is unset the endpoint stays open so an already-configured sender
+// keeps working — until it is set, anyone who learns this URL can write calls.
 export async function POST(req: Request) {
+  const secret = process.env.CALLRAIL_WEBHOOK_SECRET;
+  if (secret && req.headers.get('x-webhook-secret') !== secret) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
   let c: any;
   try {
     c = await req.json();

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCron } from '@/lib/cron';
+import { authorizeAdmin, unauthorized } from '@/lib/cron';
 import { normalizeUTM } from '@/etl/aggregate.js';
 
 export const dynamic = 'force-dynamic';
@@ -116,9 +116,9 @@ const NULL_SIGNALS = new Set(['', '(direct)', '(none)', 'direct', 'none', 'unkno
 const populated = (v: unknown) => !NULL_SIGNALS.has(String(v ?? '').trim().toLowerCase());
 
 export async function GET(req: Request) {
-  if (!authorizeCron(req)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
-  }
+  // Admin-gated: spends CallRail API quota on demand and returns the client's
+  // campaign and keyword data.
+  if (!authorizeAdmin(req)) return unauthorized(req);
   const { apiKey, accountId, ok } = creds();
   if (!ok) {
     return NextResponse.json(

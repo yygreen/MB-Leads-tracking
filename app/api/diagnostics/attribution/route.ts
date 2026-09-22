@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCron } from '@/lib/cron';
+import { authorizeAdmin, unauthorized } from '@/lib/cron';
 import { readJSON, readCollection } from '@/etl/_lib.js';
 import { normalizeUTM } from '@/etl/aggregate.js';
 
@@ -217,9 +217,9 @@ function recover(channel: string, r: Row): { by: string; source: string; medium:
 }
 
 export async function GET(req: Request) {
-  if (!authorizeCron(req)) {
-    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
-  }
+  // Admin-gated: this reads stored lead records back out. Counts only, but the
+  // campaign, keyword and landing-page distributions are the client's data.
+  if (!authorizeAdmin(req)) return unauthorized(req);
   const params = new URL(req.url).searchParams;
   const days = Math.min(Math.max(Number(params.get('days')) || 30, 1), 365);
   const top = Math.min(Math.max(Number(params.get('top')) || 15, 1), 100);

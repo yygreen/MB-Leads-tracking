@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCron } from '@/lib/cron';
+import { authorizeCron, authorizeAdmin, unauthorized } from '@/lib/cron';
 import { readCollection, clearCollection, deleteFromCollection } from '@/etl/_lib.js';
 
 export const dynamic = 'force-dynamic';
@@ -84,6 +84,10 @@ export async function GET(req: Request) {
   // Dates are safe to expose (a count per day, nothing identifying) and let a
   // test send be pinpointed before removing it.
   if (params.get('dates') === '1') {
+    // Reads stored lead records back out — admin-gated even though it returns
+    // counts only.
+    if (!authorizeAdmin(req)) return unauthorized(req);
+
     const byDate: Record<string, number> = {};
     for (const r of rows) byDate[dayOf(r)] = (byDate[dayOf(r)] || 0) + 1;
     return NextResponse.json({ ok: true, source: 'email', count: rows.length, byDate });

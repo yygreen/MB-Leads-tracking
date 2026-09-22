@@ -8,7 +8,18 @@ export const runtime = 'nodejs';
 // already installed on mastermindbehavior.com posts a payload carrying all the
 // attribution fields; we normalize and append to forms.json. The next
 // aggregate cron rolls it into the dashboard.
+//
+// SECURITY: set FORM_WEBHOOK_SECRET and have the sender include it as the
+// `x-webhook-secret` header; requests without it are then rejected. While the
+// secret is unset the endpoint stays open, because tightening it before the
+// sender is updated would drop real leads on the floor. Until it is set,
+// anyone who learns this URL can write records into forms.json.
 export async function POST(req: Request) {
+  const secret = process.env.FORM_WEBHOOK_SECRET;
+  if (secret && req.headers.get('x-webhook-secret') !== secret) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
   let payload: any;
   try {
     payload = await req.json();
