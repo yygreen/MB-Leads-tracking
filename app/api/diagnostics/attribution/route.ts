@@ -45,15 +45,26 @@ const SELF_DOMAINS = ['mastermindbehavior.com'];
 const isSelf = (host: string) =>
   SELF_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
 
+// Sentinels the tracking script writes into referrer/first_touch_source when it
+// has nothing: these are the absence of a signal, not a value. Without this the
+// literal string "(direct)" parses as a hostname and invents a referral.
+const NULL_SIGNALS = new Set(['(direct)', '(none)', 'direct', 'none', 'unknown', 'null', '-']);
+const isNullSignal = (raw: unknown) =>
+  NULL_SIGNALS.has(String(raw || '').trim().toLowerCase());
+
 // Reduce a referrer to its bare host: enough to identify the traffic source,
-// nothing that could carry a query string or a path with identifiers.
+// nothing that could carry a query string or a path with identifiers. Returns
+// '' for sentinels and for anything that isn't a plausible hostname.
 function hostOf(raw: unknown): string {
   const s = String(raw || '').trim();
-  if (!s) return '';
+  if (!s || isNullSignal(s)) return '';
   try {
-    return new URL(s.includes('://') ? s : `https://${s}`).hostname
+    const host = new URL(s.includes('://') ? s : `https://${s}`).hostname
       .toLowerCase()
       .replace(/^www\./, '');
+    // A real host has a dot and no URL-illegal leftovers; this rejects the
+    // sentinel strings that otherwise sail through URL parsing.
+    return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(host) ? host : '';
   } catch {
     return '';
   }
@@ -108,6 +119,21 @@ function searchEngine(host: string): string | null {
   return null;
 }
 
+// A hostname → the source/medium it implies. Our own domain resolves to
+// nothing: a visitor arriving from one of our own pages is a session artifact,
+// not an acquisition source.
+function fromHost(host: string): { source: string; medium: string } | null {
+  if (!host || isSelf(host)) return null;
+  const engine = searchEngine(host);
+  return engine
+    ? { source: engine, medium: 'organic' }
+    : { source: host, medium: 'referral' };
+}
+
+// CallRail swap-pool labels ("Website pool", "Offline pool"). A pool is a set
+// of DNI numbers, not an acquisition source.
+const isPoolLabel = (label: string) => /\bpool\b/.test(label);
+
 const tally = (values: string[], top: number) => {
   const out: Record<string, number> = {};
   for (const v of values) out[v] = (out[v] || 0) + 1;
@@ -156,29 +182,36 @@ function recover(channel: string, r: Row): { by: string; source: string; medium:
   }
 
   // 3. The channel's own source label. CallRail writes source_name
-  //    ("Google Organic", "Direct Traffic"); Leadtrap writes Source.
+  //    ("Google My Business", "Website pool"); Leadtrap writes Source.
   const own = channel === 'callrail' ? r.tracking_source : channel === 'leadtrap' ? r.lead_source : null;
-  if (own) {
-    // "Direct Traffic" is CallRail's way of saying it doesn't know either.
-    const cleaned = String(own).trim().toLowerCase().replace(/\s+traffic$/, '');
-    const n = normalizeUTM(cleaned, null);
-    if (n.source !== '(direct)') return { by: 'ownSourceLabel', ...n };
+  if (own && !isNullSignal(own)) {
+    const label = String(own).trim().toLowerCase();
+    // CallRail swap POOLS are not traffic sources. "Website pool" means the
+    // number was swapped in by DNI for a site visitor — it says the call came
+    // from the website, which we already knew, and nothing about how that
+    // visitor got there. Counting it as recovered would be self-deception.
+    if (!isPoolLabel(label)) {
+      // "Direct Traffic" is CallRail's way of saying it doesn't know either.
+      const n = normalizeUTM(label.replace(/\s+traffic$/, ''), null);
+      if (n.source !== '(direct)') return { by: 'ownSourceLabel', ...n };
+    }
   }
 
   // 4. First-touch source recorded by the tracking script at session start.
-  if (r.first_touch_source) {
-    const n = normalizeUTM(r.first_touch_source, null);
-    if (n.source !== '(direct)') return { by: 'firstTouchSource', ...n };
+  //    The script stores a full referrer URL here, not a source token, so
+  //    resolve it as a host before falling back to treating it as a token.
+  if (r.first_touch_source && !isNullSignal(r.first_touch_source)) {
+    const hit = fromHost(hostOf(r.first_touch_source));
+    if (hit) return { by: 'firstTouchSource', ...hit };
+    if (!String(r.first_touch_source).includes('://')) {
+      const n = normalizeUTM(r.first_touch_source, null);
+      if (n.source !== '(direct)') return { by: 'firstTouchSource', ...n };
+    }
   }
 
   // 5. The referrer host: a search engine means organic, anything else referral.
-  const host = hostOf(r.referrer);
-  if (host && !isSelf(host)) {
-    const engine = searchEngine(host);
-    return engine
-      ? { by: 'referrer', source: engine, medium: 'organic' }
-      : { by: 'referrer', source: host, medium: 'referral' };
-  }
+  const hit = fromHost(hostOf(r.referrer));
+  if (hit) return { by: 'referrer', ...hit };
 
   return null;
 }
@@ -232,13 +265,21 @@ export async function GET(req: Request) {
     });
 
     const signals = {
-      tracking_source: untagged.filter((r) => r.tracking_source).length,
-      lead_source: untagged.filter((r) => r.lead_source).length,
-      first_touch_source: untagged.filter((r) => r.first_touch_source).length,
-      referrer: untagged.filter((r) => hostOf(r.referrer) && !isSelf(hostOf(r.referrer))).length,
+      tracking_source: untagged.filter((r) => r.tracking_source && !isNullSignal(r.tracking_source)).length,
+      lead_source: untagged.filter((r) => r.lead_source && !isNullSignal(r.lead_source)).length,
+      first_touch_source: untagged.filter(
+        (r) => r.first_touch_source && !isNullSignal(r.first_touch_source)
+      ).length,
+      referrer: untagged.filter((r) => fromHost(hostOf(r.referrer))).length,
       landing_page: untagged.filter((r) => r.landing_page).length,
       page_url: untagged.filter((r) => r.page_url).length,
       clickId: untagged.filter((r) => r.gclid || r.fbclid || r.msclkid).length,
+      // Present-but-worthless: a swap-pool label says "came via the website"
+      // and nothing about acquisition. Counted here so it is visible rather
+      // than quietly folded into either recovered or unrecoverable.
+      poolLabelOnly: untagged.filter(
+        (r) => r.tracking_source && isPoolLabel(String(r.tracking_source).toLowerCase())
+      ).length,
     };
     // Only report signals this channel actually stores — a zero for a field the
     // channel never writes is noise, not a finding.
