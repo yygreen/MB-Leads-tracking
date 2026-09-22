@@ -98,15 +98,27 @@ curl -H "Authorization: Bearer $CRON_SECRET" \
   "https://<host>/api/diagnostics/attribution?days=30"
 ```
 
+Purges (`?reset=1`) additionally require an explicit confirm token —
+`&confirm=purge-leadtrap`, `&confirm=purge-email`. Configuring a secret should
+never be the thing that arms a destructive operation.
+
 **Scheduled pulls — open when no secret is set.** The routes in `vercel.json`'s
 `crons`, plus `/api/refresh-all`. Vercel Cron sends the bearer token only when
 `CRON_SECRET` exists; failing closed here would silently stop every scheduled
 pull if the variable went missing. They are idempotent re-fetches of data we
 already own.
 
-> Setting `CRON_SECRET` also locks `/api/refresh-all`, which the dashboard's
-> Refresh button calls from the browser. The button will stop working until
-> that call is moved server-side.
+The dashboard's Refresh button does **not** go through `/api/refresh-all` — it
+calls the `refreshAllAction` server action (`app/actions.ts`), which runs the
+same `lib/refreshAll.ts` work server-side. Setting `CRON_SECRET` therefore has
+no effect on the button.
+
+**Dashboard access — optional password.** `/`, `/api/data` and `/api/gbp/daily`
+are public by default. Set `DASHBOARD_PASSWORD` (and optionally
+`DASHBOARD_USER`, default `mb`) to put HTTP Basic auth in front of them; while
+it is unset `middleware.ts` does nothing. The matcher deliberately excludes the
+webhooks (their senders can't do Basic auth) and the `Bearer`-authenticated
+cron and diagnostics routes.
 
 **Webhooks — optional shared secret.** `/api/webflow-form`,
 `/api/leadtrap-webhook`, `/api/email-webhook`, `/api/callrail-webhook` accept

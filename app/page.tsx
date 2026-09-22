@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DashboardData } from '@/lib/types';
 import type { DateRange, PresetKey } from '@/lib/dateRange';
 import { presetRange, rangeLabel } from '@/lib/dateRange';
+import { refreshAllAction } from '@/app/actions';
 import TopBar from '@/components/TopBar';
 import PeriodControl from '@/components/PeriodControl';
 import SummaryCards from '@/components/SummaryCards';
@@ -78,7 +79,10 @@ export default function Page() {
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await fetch('/api/refresh-all', { method: 'POST' });
+      // Server action rather than a fetch to /api/refresh-all: the work runs
+      // on the server, so the route can require CRON_SECRET without the
+      // button losing access to it.
+      await refreshAllAction();
     } catch {
       // refresh is best-effort; we still re-read whatever data is current
     } finally {
