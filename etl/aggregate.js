@@ -46,11 +46,37 @@ function dayKey(ts) {
 const KNOWN_MEDIA = new Set([
   'organic', 'cpc', 'ppc', 'paid', 'search', 'referral', 'email', 'social', 'display', 'affiliate', 'video',
 ]);
-function normalizeUTM(rawSource, rawMedium) {
+
+// Our own domain(s). A "referral" from ourselves is a session artifact (a
+// visitor bouncing through our own pages), not an acquisition source, so it
+// collapses to (direct) rather than inventing a referrer.
+const SELF_DOMAINS = ['mastermindbehavior.com'];
+const isSelfDomain = (host) =>
+  SELF_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`));
+
+export function normalizeUTM(rawSource, rawMedium) {
   let s = String(rawSource || '').trim().toLowerCase();
   let m = String(rawMedium || '').trim().toLowerCase();
   if (m === '(none)') m = '';
   if (s === '(direct)') s = '';
+
+  // Leadtrap has no utm_* fields, so the webhook passes its Source label
+  // straight through — "Direct", "Referral (www.example.com)". Unwrap those
+  // into real source/medium pairs instead of leaving them as pseudo-sources.
+  const ref = s.match(/^referral\s*\(([^)]+)\)$/);
+  if (ref) {
+    const host = ref[1].trim().replace(/^www\./, '');
+    if (isSelfDomain(host)) {
+      s = ''; // self-referral → (direct)
+    } else {
+      s = host; // a real referrer keeps its host, with referral as the medium
+      m = m || 'referral';
+    }
+  }
+  // "direct"/"none" as a literal source are the same bucket as the (direct)
+  // sentinel — fold them so the same traffic doesn't split across two rows.
+  if (s === 'direct' || s === 'none') s = '';
+
   if (!m) {
     const parts = s.split(/\s+/).filter(Boolean);
     if (parts.length === 2 && KNOWN_MEDIA.has(parts[1])) {
