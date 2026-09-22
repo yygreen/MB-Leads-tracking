@@ -10,7 +10,6 @@ export type ChannelKey =
   | 'paid'
   | 'gbp'
   | 'organic'
-  | 'ai'
   | 'referral'
   | 'direct'
   | 'other';
@@ -18,8 +17,7 @@ export type ChannelKey =
 export const CHANNEL_LABELS: Record<ChannelKey, string> = {
   paid: 'Paid search & ads',
   gbp: 'Google Business Profile',
-  organic: 'Organic search',
-  ai: 'AI assistants',
+  organic: 'Organic & AI search',
   referral: 'Referrals',
   direct: 'Direct / untracked',
   other: 'Other',
@@ -30,7 +28,6 @@ export const CHANNEL_ORDER: ChannelKey[] = [
   'organic',
   'gbp',
   'paid',
-  'ai',
   'referral',
   'direct',
   'other',
@@ -57,7 +54,14 @@ export function channelOf(rawSource: string, rawMedium: string): ChannelKey {
   const m = String(rawMedium || '').trim().toLowerCase();
 
   if (!s || s === '(direct)') return 'direct';
-  if (AI_SOURCES.has(s)) return 'ai';
+
+  // An AI assistant surfacing the site is unpaid discovery earned by content —
+  // the same work, and the same commercial story, as ranking in a search
+  // engine. It groups with organic rather than standing apart as a rounding
+  // error. The per-engine counts stay visible in the row's tag list, so the
+  // split is still legible and can be broken back out when the volume
+  // justifies its own line.
+  if (AI_SOURCES.has(s)) return 'organic';
 
   // Calls to the number on the Google Business Profile listing. CallRail tags
   // these `google / search` (96% of them arrive on the Google My Business
