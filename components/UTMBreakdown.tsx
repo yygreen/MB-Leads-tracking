@@ -4,6 +4,17 @@ import { useMemo } from 'react';
 import type { UTMRecord } from '@/lib/types';
 import type { DateRange } from '@/lib/dateRange';
 import { inRange } from '@/lib/dateRange';
+import { channelOf, CHANNEL_LABELS, CHANNEL_ORDER, type ChannelKey } from '@/lib/channels';
+
+// Leads grouped by the channel a person would name, with the underlying UTM
+// tags listed beneath each row. The raw tags are unchanged — this is grouping
+// for legibility, not a rewrite of the tagging.
+
+type Row = {
+  key: ChannelKey;
+  count: number;
+  tags: Array<{ label: string; count: number }>;
+};
 
 export default function UTMBreakdown({
   records,
@@ -12,16 +23,24 @@ export default function UTMBreakdown({
   records: UTMRecord[];
   range: DateRange;
 }) {
-  const rows = useMemo(() => {
-    const m = new Map<string, { source: string; medium: string; count: number }>();
+  const rows = useMemo<Row[]>(() => {
+    const groups = new Map<ChannelKey, Map<string, number>>();
     records.forEach((r) => {
       if (!inRange(r.date, range)) return;
-      const key = `${r.source}|${r.medium}`;
-      const cur = m.get(key) || { source: r.source, medium: r.medium, count: 0 };
-      cur.count += 1;
-      m.set(key, cur);
+      const key = channelOf(r.source, r.medium);
+      const tag = `${r.source} / ${r.medium}`;
+      if (!groups.has(key)) groups.set(key, new Map());
+      const g = groups.get(key)!;
+      g.set(tag, (g.get(tag) || 0) + 1);
     });
-    return [...m.values()].sort((a, b) => b.count - a.count);
+
+    return CHANNEL_ORDER.filter((k) => groups.has(k)).map((key) => {
+      const g = groups.get(key)!;
+      const tags = [...g.entries()]
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) => b.count - a.count);
+      return { key, count: tags.reduce((a, t) => a + t.count, 0), tags };
+    });
   }, [records, range]);
 
   const total = rows.reduce((a, r) => a + r.count, 0) || 1;
@@ -41,18 +60,27 @@ export default function UTMBreakdown({
       <table className="table">
         <thead>
           <tr>
-            <th>UTM source</th>
-            <th>Medium</th>
-            <th className="num">Count</th>
+            <th>Channel</th>
+            <th className="num">Leads</th>
             <th className="num">%</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={`${r.source}-${r.medium}`}>
-              <td style={{ fontWeight: 600, color: 'var(--navy)' }}>{r.source}</td>
+            <tr key={r.key}>
               <td>
-                <span className="tag-medium">{r.medium}</span>
+                <span style={{ fontWeight: 600, color: 'var(--navy)' }}>
+                  {CHANNEL_LABELS[r.key]}
+                </span>
+                {/* The raw tags behind the group, so the grouping is always
+                    auditable against the UTM data. */}
+                <div className="cell-sub">
+                  {r.tags
+                    .slice(0, 4)
+                    .map((t) => `${t.label} (${t.count})`)
+                    .join(' · ')}
+                  {r.tags.length > 4 && ` · +${r.tags.length - 4} more`}
+                </div>
               </td>
               <td className="num">{r.count.toLocaleString('en-US')}</td>
               <td className="num muted">{((r.count / total) * 100).toFixed(1)}%</td>

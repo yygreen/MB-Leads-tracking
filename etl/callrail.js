@@ -73,13 +73,25 @@ export function hostOf(raw) {
   }
 }
 
-/** Path only ("/areas-we-serve/lakewood"), or null. */
+// The main site. A page on any OTHER host — the Unbounce PPC landers on
+// learn.mastermindbehavior.com, say — keeps its host in the stored reference,
+// because the host is the difference between a paid-only asset and an organic
+// page. Dropping it collapsed both into one row and made a live Unbounce lander
+// look like a 404 on www.
+const PRIMARY_HOSTS = new Set(['mastermindbehavior.com']);
+const isPrimaryHost = (h) => PRIMARY_HOSTS.has(h.replace(/^www\./, ''));
+
+/** Page reference: "/areas-we-serve/lakewood" on the main site, or
+ *  "learn.mastermindbehavior.com/aba-therapy-near-me-1" elsewhere. Query and
+ *  fragment are always dropped. Returns null when there is nothing usable. */
 export function pathOf(raw) {
   const s = String(raw || '').trim();
   if (!s) return null;
   try {
     const u = new URL(s.includes('://') ? s : `https://${s}`);
-    return u.pathname.replace(/\/+$/, '') || '/';
+    const path = u.pathname.replace(/\/+$/, '') || '/';
+    const host = u.hostname.toLowerCase();
+    return isPrimaryHost(host) ? path : `${host.replace(/^www\./, '')}${path === '/' ? '' : path}`;
   } catch {
     const cut = s.split(/[?#]/)[0].replace(/\/+$/, '');
     return cut || null;

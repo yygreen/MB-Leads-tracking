@@ -73,6 +73,15 @@ export function normalizeUTM(rawSource, rawMedium) {
       m = m || 'referral';
     }
   }
+  // A bare self-domain as the source (utm_source=www.mastermindbehavior.com,
+  // utm_medium=referral) is the same session artifact as the wrapped form
+  // above — a visitor bouncing through our own pages, not an acquisition
+  // source. The medium goes with it, or the lead reads as "(direct) / referral".
+  if (s && isSelfDomain(s)) {
+    s = '';
+    if (m === 'referral') m = '';
+  }
+
   // "direct"/"none" as a literal source are the same bucket as the (direct)
   // sentinel — fold them so the same traffic doesn't split across two rows.
   if (s === 'direct' || s === 'none') s = '';
@@ -399,31 +408,6 @@ export async function aggregate() {
     { key: 'email', label: 'Email', status: status(email, 'pending') },
   ];
 
-  // --- per-call attribution rows for the Call Sources section ---------------
-  // One row per call within the 180-day window, carrying the resolved source
-  // plus the dimensions that explain where the call came from. Deliberately
-  // nothing identifying: no call id, caller name, or phone number — and URLs
-  // arrive already reduced to host/path by etl/callrail.js.
-  const callRecords = [];
-  leadCalls.forEach((c) => {
-    if (!c.timestamp) return;
-    const date = dayKey(c.timestamp);
-    if (!index.has(date)) return;
-    const { source, medium } = resolveAttribution(c);
-    callRecords.push({
-      date,
-      source,
-      medium,
-      campaign: c.cr_campaign || null,
-      keyword: c.cr_keyword || null,
-      landing: c.cr_landing_path || null,
-      device: (c.cr_device || '').toLowerCase() || null,
-      // The tracker the call came in on — a pool name means a website visitor,
-      // a named line (e.g. Google My Business) means an offline/listing call.
-      tracker: c.tracking_source || null,
-    });
-  });
-
   return {
     lastUpdated: new Date().toISOString(),
     summary: {
@@ -441,7 +425,6 @@ export async function aggregate() {
     utmRecords,
     utmTimeline,
     utmSeries,
-    callRecords,
     forms: formRows,
     gbpLocations,
     gbpStates,

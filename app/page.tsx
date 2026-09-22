@@ -12,7 +12,6 @@ import ChannelTimeline from '@/components/ChannelTimeline';
 import SourceTimeline from '@/components/SourceTimeline';
 import ChannelMixTable from '@/components/ChannelMixTable';
 import UTMBreakdown from '@/components/UTMBreakdown';
-import CallSources from '@/components/CallSources';
 import GBPSection from '@/components/GBPSection';
 import SourcesStatus from '@/components/SourcesStatus';
 
@@ -67,8 +66,6 @@ export default function Page() {
   const [channelCustom, setChannelCustom] = useState<DateRange | null>(null);
   const [sourcePreset, setSourcePreset] = useState<PresetKey>('last90');
   const [sourceCustom, setSourceCustom] = useState<DateRange | null>(null);
-  const [callPreset, setCallPreset] = useState<PresetKey>('last30');
-  const [callCustom, setCallCustom] = useState<DateRange | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch('/api/data', { cache: 'no-store' });
@@ -109,10 +106,6 @@ export default function Page() {
     () => resolveRange(sourcePreset, sourceCustom, minDate, maxDate),
     [sourcePreset, sourceCustom, minDate, maxDate]
   );
-  const callDateRange = useMemo<DateRange>(
-    () => resolveRange(callPreset, callCustom, minDate, maxDate),
-    [callPreset, callCustom, minDate, maxDate]
-  );
 
   const handlePreset = useCallback((key: PresetKey) => {
     setPresetKey(key);
@@ -137,14 +130,6 @@ export default function Page() {
   const handleSourceCustom = useCallback((r: DateRange) => {
     setSourcePreset('custom');
     setSourceCustom(r);
-  }, []);
-  const handleCallPreset = useCallback((key: PresetKey) => {
-    setCallPreset(key);
-    if (key !== 'custom') setCallCustom(null);
-  }, []);
-  const handleCallCustom = useCallback((r: DateRange) => {
-    setCallPreset('custom');
-    setCallCustom(r);
   }, []);
 
   if (!data) {
@@ -203,7 +188,7 @@ export default function Page() {
 
       <Section
         title="Lead Sources / Mediums"
-        desc="Where leads come from, by UTM source & medium — the volume over time and the breakdown for the same period. ⚠️ UTM tracking went live the week of June 15, 2026; periods reaching earlier than mid-June show untagged leads as (direct)."
+        desc="Where leads come from — the volume over time, and the same period grouped into channels below. Each channel lists the UTM tags behind it, so the grouping can always be checked against the raw tracking. ⚠️ UTM tracking went live the week of June 15, 2026; periods reaching earlier than mid-June show untagged leads as (direct)."
       >
         <PeriodControl
           label="Period"
@@ -221,26 +206,10 @@ export default function Page() {
         />
         <div className="subsection">
           <div className="subsection-label">
-            Source / medium breakdown · {rangeLabel(sourceDateRange)}
+            Channel breakdown · {rangeLabel(sourceDateRange)}
           </div>
           <UTMBreakdown records={data.utmRecords} range={sourceDateRange} />
         </div>
-      </Section>
-
-      <Section
-        title="Call Sources"
-        desc="Where the phone calls come from. CallRail records each caller's session — the channel that brought them, the campaign and search term behind it, and the page they were on — so this covers calls that carry no campaign tags at all, such as someone who found the site through Google."
-      >
-        <PeriodControl
-          label="Period"
-          presetKey={callPreset}
-          range={callDateRange}
-          minDate={minDate}
-          maxDate={maxDate}
-          onPreset={handleCallPreset}
-          onCustom={handleCallCustom}
-        />
-        <CallSources records={data.callRecords ?? []} range={callDateRange} />
       </Section>
 
       <Section
