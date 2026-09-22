@@ -38,13 +38,19 @@ export default function UTMBreakdown({
       g.set(tag, (g.get(tag) || 0) + 1);
     });
 
-    return CHANNEL_ORDER.filter((k) => groups.has(k)).map((key) => {
-      const g = groups.get(key)!;
-      const tags = [...g.entries()]
-        .map(([label, count]) => ({ label, count }))
-        .sort((a, b) => b.count - a.count);
-      return { key, count: tags.reduce((a, t) => a + t.count, 0), tags };
-    });
+    return [...groups.entries()]
+      .map(([key, g]) => {
+        const tags = [...g.entries()]
+          .map(([label, count]) => ({ label, count }))
+          .sort((a, b) => b.count - a.count);
+        return { key, count: tags.reduce((a, t) => a + t.count, 0), tags };
+      })
+      // Biggest channel first. CHANNEL_ORDER breaks ties so two channels on the
+      // same count don't swap places between renders.
+      .sort(
+        (a, b) =>
+          b.count - a.count || CHANNEL_ORDER.indexOf(a.key) - CHANNEL_ORDER.indexOf(b.key)
+      );
   }, [records, range]);
 
   const total = rows.reduce((a, r) => a + r.count, 0) || 1;
