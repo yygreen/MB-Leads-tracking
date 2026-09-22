@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { authorizeCron } from '@/lib/cron';
+import { authorizeCron, authorizeAdmin, unauthorized } from '@/lib/cron';
 import { readCollection, clearCollection } from '@/etl/_lib.js';
 
 export const dynamic = 'force-dynamic';
@@ -66,6 +66,10 @@ export async function GET(req: Request) {
   const rows = (await readCollection('leadtrap')) as any[];
 
   if (params.get('breakdown') === '1') {
+    // Reads stored lead records back out — admin-gated even though it returns
+    // counts only.
+    if (!authorizeAdmin(req)) return unauthorized(req);
+
     const byScore = tally(rows, (r) => scoreLetter(r?.score));
     const scored = rows.length - (byScore.unscored || 0);
     // Dedup health: the webhook falls back to `${timestamp}|${email||phone}`

@@ -79,3 +79,42 @@ Push to GitHub and import into Vercel. It builds and renders with mock data out
 of the box. Add credentials in Vercel → Project → Settings → Environment
 Variables as they arrive; the crons + aggregate will replace mock with live
 data on their next run.
+
+## Endpoint security
+
+The dashboard itself (`/`, `/api/data`, `/api/gbp/daily`) is public by design —
+anyone with the URL can read it. Everything else falls into three tiers.
+
+**Admin — fail closed.** `/api/diagnostics/*`, `/api/gbp/discover`,
+`/api/cron/leadtrap?breakdown=1`, `/api/cron/email?dates=1` and every
+destructive parameter (`?reset=1`, `?removeDate=`). These read stored lead
+records back out or spend upstream API quota on demand, so they require
+`CRON_SECRET` to be **set** and supplied as `Authorization: Bearer $CRON_SECRET`.
+If `CRON_SECRET` is absent they return 401 — no secret means no admin access,
+never open access.
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://<host>/api/diagnostics/attribution?days=30"
+```
+
+**Scheduled pulls — open when no secret is set.** The routes in `vercel.json`'s
+`crons`, plus `/api/refresh-all`. Vercel Cron sends the bearer token only when
+`CRON_SECRET` exists; failing closed here would silently stop every scheduled
+pull if the variable went missing. They are idempotent re-fetches of data we
+already own.
+
+> Setting `CRON_SECRET` also locks `/api/refresh-all`, which the dashboard's
+> Refresh button calls from the browser. The button will stop working until
+> that call is moved server-side.
+
+**Webhooks — optional shared secret.** `/api/webflow-form`,
+`/api/leadtrap-webhook`, `/api/email-webhook`, `/api/callrail-webhook` accept
+`FORM_WEBHOOK_SECRET`, `LEADTRAP_WEBHOOK_SECRET`, `EMAIL_WEBHOOK_SECRET` and
+`CALLRAIL_WEBHOOK_SECRET` respectively, sent as the `x-webhook-secret` header.
+
+Each stays **open while its secret is unset**, because rejecting requests before
+the sending system is updated would drop real leads. That means an unset secret
+leaves the endpoint writable by anyone who learns the URL. Closing one is a
+two-step change: set the variable in Vercel *and* add the header in the sender
+(Webflow, Leadtrap, the inbox Zap, CallRail).

@@ -68,6 +68,6 @@ export async function POST(req: Request) {
   return NextResponse.json({ ok: true, results, totalLeads30d, ranAt: new Date().toISOString() });
 }
 
-export async function GET(req: Request) {
-  return POST(req);
-}
+// Deliberately no GET handler. This route runs every ETL pull, so a GET alias
+// meant any crawler that found the URL could trigger the full set of upstream
+// API calls.

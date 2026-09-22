@@ -11,6 +11,12 @@ export const runtime = 'nodejs';
 // marketing-attribution dashboard, so we deliberately store ONLY marketing
 // fields + light qualifiers and DROP all PHI. The full lead lives in Leadtrap
 // (and the client's CRM); we only need the lead's source and timing.
+//
+// SECURITY: set LEADTRAP_WEBHOOK_SECRET and have Leadtrap send it as the
+// `x-webhook-secret` header; requests without it are then rejected. While the
+// secret is unset the endpoint stays open, because tightening it before the
+// sender is updated would drop real leads on the floor. Until it is set,
+// anyone who learns this URL can write lead records.
 
 // Case-insensitive field lookup across candidate keys.
 function field(obj: Record<string, any>, ...candidates: string[]) {
@@ -24,6 +30,11 @@ function field(obj: Record<string, any>, ...candidates: string[]) {
 }
 
 export async function POST(req: Request) {
+  const secret = process.env.LEADTRAP_WEBHOOK_SECRET;
+  if (secret && req.headers.get('x-webhook-secret') !== secret) {
+    return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
+  }
+
   let body: any;
   try {
     body = await req.json();

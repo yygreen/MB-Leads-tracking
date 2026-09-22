@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { authorizeAdmin, unauthorized } from '@/lib/cron';
 import {
   gbpCreds,
   getAccessToken,
@@ -19,6 +20,10 @@ const HACKENSACK_ID = '4727786949203212697';
 const LEAD_KEYS = ['calls', 'websiteClicks', 'directions', 'conversations'] as const;
 
 export async function GET(req: Request) {
+  // Admin-gated: calls the Google Business Profile APIs on demand (quota) and
+  // returns the client's location inventory.
+  if (!authorizeAdmin(req)) return unauthorized(req);
+
   const creds = gbpCreds();
   if (!creds) {
     return NextResponse.json(
