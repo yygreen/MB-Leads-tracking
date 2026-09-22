@@ -61,26 +61,6 @@ export interface UTMRecord {
   channel: string;
 }
 
-/** One call's resolved attribution plus the dimensions that explain where it
- *  came from. Nothing identifying: no call id, caller name or phone number,
- *  and URLs arrive reduced to a path by the ETL. */
-export interface CallRecord {
-  date: string;
-  /** resolved source — CallRail's own session attribution when utm_* are absent */
-  source: string;
-  medium: string;
-  /** CallRail campaign, e.g. "New Jersey" (paid traffic only) */
-  campaign: string | null;
-  /** paid search term that produced the call */
-  keyword: string | null;
-  /** path the caller entered the site on, e.g. "/areas-we-serve/lakewood" */
-  landing: string | null;
-  device: string | null;
-  /** the tracker the call arrived on — a pool means a website visitor, a named
-   *  line (e.g. "Google My Business") means an offline/listing call */
-  tracker: string | null;
-}
-
 export interface FormRow {
   name: string;
   count: number;
@@ -141,8 +121,6 @@ export interface DashboardData {
   utmTimeline: UTMTimelinePoint[];
   /** the source/medium combos rendered as series (top combos + "Other") */
   utmSeries: UTMSeries[];
-  /** per-call attribution rows, for the Call Sources section */
-  callRecords: CallRecord[];
   /** true when CallRail lead counts use the qualification filter (funnel view);
    *  false = raw counts (single card). Gated by CALLRAIL_QUALIFY, default off. */
   callrailQualified?: boolean;
