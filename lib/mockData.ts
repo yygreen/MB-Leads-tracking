@@ -4,6 +4,7 @@ import type {
   ChannelMixRow,
   UTMRow,
   UTMRecord,
+  CallRecord,
   FormRow,
   GBPLocationRow,
   GBPStateRow,
@@ -142,6 +143,37 @@ function buildUTMRecords(
   return records;
 }
 
+// Per-call attribution rows for the Call Sources section. Derived from the
+// same mock UTM records so the mock stays internally consistent: the calls
+// here are the subset the mock assigns to the callrail channel.
+function buildCallRecords(utmRecords: UTMRecord[]): CallRecord[] {
+  const LANDING = [
+    '/aba-therapy-near-me-1',
+    '/',
+    '/areas-we-serve/lakewood',
+    '/aba-therapy-in-georgia',
+    '/areas-we-serve',
+  ];
+  const KEYWORDS = ['aba therapy near me', 'aba therapy nj', 'in home aba services', 'aba therapist'];
+  const CAMPAIGNS = ['New Jersey', 'Georgia', 'North Carolina'];
+
+  return utmRecords
+    .filter((r) => r.channel === 'callrail')
+    .map((r, i) => {
+      const paid = r.medium === 'cpc' || r.medium === 'paid';
+      return {
+        date: r.date,
+        source: r.source,
+        medium: r.medium,
+        campaign: paid ? CAMPAIGNS[i % CAMPAIGNS.length] : null,
+        keyword: paid ? KEYWORDS[i % KEYWORDS.length] : null,
+        landing: LANDING[i % LANDING.length],
+        device: i % 2 === 0 ? 'mobile' : 'desktop',
+        tracker: i % 11 === 0 ? 'Google My Business' : 'Website pool',
+      };
+    });
+}
+
 // Distribute each day's lead volume across source/medium combos so the mock
 // source timeline mirrors the channel one.
 const UTM_DIST: Array<{ combo: string; weight: number }> = [
@@ -238,6 +270,7 @@ export function getMockDashboard(): DashboardData {
   const gbpCalls30 = sumLast(timeline, 'gbp', 30);
   const totalLeads30d = callrail30 + forms30 + leadtrap30 + email30;
   const { utmTimeline, utmSeries } = buildUTMTimeline(timeline);
+  const mockUTMRecords = buildUTMRecords(utmTimeline);
 
   return {
     lastUpdated: new Date().toISOString(),
@@ -250,7 +283,8 @@ export function getMockDashboard(): DashboardData {
     timeline,
     channelMix: buildChannelMix(timeline),
     utmSources: buildUTM(totalLeads30d),
-    utmRecords: buildUTMRecords(utmTimeline),
+    utmRecords: mockUTMRecords,
+    callRecords: buildCallRecords(mockUTMRecords),
     utmTimeline,
     utmSeries,
     callrailQualified: false,
