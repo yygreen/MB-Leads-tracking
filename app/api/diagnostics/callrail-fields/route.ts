@@ -205,6 +205,11 @@ export async function GET(req: Request) {
   // Of those, the ones whose source_name is only a swap-pool label — the 32.
   const poolOnly = untagged.filter((c) => /\bpool\b/.test(String(c.source_name || '').toLowerCase()));
 
+  // Per-click/per-visitor identifiers. Knowing HOW MANY calls carry one is the
+  // finding; the values themselves are opaque handles that join back to an
+  // individual click, so they are counted and never listed.
+  const ID_FIELDS = new Set(['gclid', 'tracker_id']);
+
   const fieldReport = (rows: Row[]) => {
     const out: Record<string, any> = {};
     for (const f of supported) {
@@ -212,6 +217,10 @@ export async function GET(req: Request) {
       const hits = rows.filter((r) => populated(r[f]));
       if (!hits.length) {
         out[f] = { populated: 0 };
+        continue;
+      }
+      if (ID_FIELDS.has(f)) {
+        out[f] = { populated: hits.length, share: pct(hits.length, rows.length), values: 'omitted (identifier)' };
         continue;
       }
       const values =
