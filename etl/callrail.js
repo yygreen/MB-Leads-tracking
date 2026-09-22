@@ -54,6 +54,38 @@ export function qualifyCalls(calls, ivrSeconds = IVR_SECONDS) {
   return out;
 }
 
+// --- URL REDUCTION ----------------------------------------------------------
+// CallRail stores the caller's full referrer and page URLs. We keep only the
+// parts the dashboard reports — a referrer's host, a page's path — and drop
+// query strings and fragments, which are where anything identifying would sit.
+
+/** Bare hostname, or null. Rejects CallRail's "(direct)"-style sentinels. */
+export function hostOf(raw) {
+  const s = String(raw || '').trim();
+  if (!s || /^\(.*\)$/.test(s)) return null;
+  try {
+    const h = new URL(s.includes('://') ? s : `https://${s}`).hostname
+      .toLowerCase()
+      .replace(/^www\./, '');
+    return /^[a-z0-9.-]+\.[a-z]{2,}$/.test(h) ? h : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Path only ("/areas-we-serve/lakewood"), or null. */
+export function pathOf(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s.includes('://') ? s : `https://${s}`);
+    return u.pathname.replace(/\/+$/, '') || '/';
+  } catch {
+    const cut = s.split(/[?#]/)[0].replace(/\/+$/, '');
+    return cut || null;
+  }
+}
+
 // --- PULL -------------------------------------------------------------------
 export async function pull() {
   const apiKey = process.env.CALLRAIL_API_KEY;
@@ -72,8 +104,18 @@ export async function pull() {
   let totalPages = 1;
   do {
     const params = new URLSearchParams({
+      // source_name names the TRACKER, which for a session-level DNI pool is
+      // the pool ("Website pool") and says nothing about where the caller came
+      // from. The session attribution swap.js captures lives in source/medium/
+      // campaign/keywords/referring_url/landing_page_url — a caller arriving
+      // from Google organic has a referrer but no utm_* at all, so without
+      // these the call is indistinguishable from an untracked one.
+      //
+      // gclid is deliberately NOT requested: it is a per-click identifier that
+      // joins back to an individual ad click, and source/medium already tell us
+      // the traffic is paid.
       fields:
-        'id,start_time,direction,duration,answered,first_call,customer_name,customer_phone_number,source_name,tags,utm_source,utm_medium,utm_campaign',
+        'id,start_time,direction,duration,answered,first_call,customer_name,customer_phone_number,source_name,tags,utm_source,utm_medium,utm_campaign,source,medium,campaign,keywords,referring_url,landing_page_url,last_requested_url,device_type',
       start_date: daysAgoISO(180),
       per_page: String(PER_PAGE),
       page: String(page),
@@ -105,6 +147,18 @@ export async function pull() {
     utm_source: c.utm_source || null,
     utm_medium: c.utm_medium || null,
     utm_campaign: c.utm_campaign || null,
+    // --- session attribution (see the fields comment above) ---
+    cr_source: c.source || null,
+    cr_medium: c.medium || null,
+    cr_campaign: c.campaign || null,
+    cr_keyword: c.keywords || null,
+    // URLs are reduced before storage: the host of a referrer and the path of a
+    // page are what the dashboard reports, and a query string is the part that
+    // could carry something identifying.
+    cr_referrer_host: hostOf(c.referring_url),
+    cr_landing_path: pathOf(c.landing_page_url),
+    cr_last_path: pathOf(c.last_requested_url),
+    cr_device: c.device_type || null,
   }));
 }
 
