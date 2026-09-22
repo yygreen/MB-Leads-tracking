@@ -16,6 +16,10 @@ type Row = {
   tags: Array<{ label: string; count: number }>;
 };
 
+// Enough that Organic & AI search lists every engine rather than truncating the
+// AI ones, which are the smallest counts and the most interesting to watch.
+const TAGS_SHOWN = 8;
+
 export default function UTMBreakdown({
   records,
   range,
@@ -76,10 +80,10 @@ export default function UTMBreakdown({
                     auditable against the UTM data. */}
                 <div className="cell-sub">
                   {r.tags
-                    .slice(0, 4)
+                    .slice(0, TAGS_SHOWN)
                     .map((t) => `${t.label} (${t.count})`)
                     .join(' · ')}
-                  {r.tags.length > 4 && ` · +${r.tags.length - 4} more`}
+                  {r.tags.length > TAGS_SHOWN && ` · +${r.tags.length - TAGS_SHOWN} more`}
                 </div>
               </td>
               <td className="num">{r.count.toLocaleString('en-US')}</td>
